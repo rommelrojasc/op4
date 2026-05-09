@@ -1,0 +1,12 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+ib-insync==0.9.86
+python-socketio==5.11.0
+redis==5.0.1
+pydantic==2.5.0
+pydantic-settings==2.1.0
+pandas==2.1.4
+numpy==1.26.2
+python-dotenv==1.0.0
+beautifulsoup4==4.12.3
+polygon-api-client==1.16.3

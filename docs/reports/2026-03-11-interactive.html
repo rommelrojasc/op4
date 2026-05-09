@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OP3 Interactive Report — March 11, 2026</title>
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #1c2333;
+  --border: #30363d; --text: #c9d1d9; --text2: #8b949e;
+  --green: #39d98a; --red: #ff6b6b; --blue: #58a6ff; --yellow: #d4a030;
+  --cyan: #56d4dd; --purple: #bc8cff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; padding:20px; }
+h1 { font-size:22px; font-weight:600; margin-bottom:4px; }
+.subtitle { color:var(--text2); font-size:12px; margin-bottom:16px; }
+
+/* Filters */
+.filters { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+.filter-group { display:flex; flex-direction:column; gap:3px; }
+.filter-group label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+.filter-group select, .filter-group input { background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:5px 8px; font-size:12px; font-family:inherit; min-width:100px; }
+.filter-group select:focus, .filter-group input:focus { outline:none; border-color:var(--blue); }
+.filter-group select { cursor:pointer; }
+.filter-group select[multiple] { min-height:60px; }
+.btn { background:var(--blue); color:#fff; border:none; border-radius:4px; padding:6px 14px; font-size:11px; font-weight:600; cursor:pointer; align-self:flex-end; }
+.btn:hover { opacity:0.9; }
+.btn-reset { background:var(--bg3); color:var(--text2); }
+.btn-reset:hover { color:var(--text); }
+.filter-pills { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px; }
+.pill { display:inline-flex; align-items:center; gap:4px; background:rgba(88,166,255,0.12); color:var(--blue); font-size:10px; font-weight:600; padding:3px 8px; border-radius:12px; }
+.pill .x { cursor:pointer; opacity:0.6; }
+.pill .x:hover { opacity:1; }
+
+/* Hero */
+.hero { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:16px; }
+.hero-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px; }
+.hero-card .label { font-size:9px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+.hero-card .value { font-size:20px; font-weight:700; }
+.hero-card .sub { font-size:10px; color:var(--text2); margin-top:2px; }
+.green { color:var(--green); }
+.red { color:var(--red); }
+
+/* Charts area */
+.charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px; }
+.chart-card h3 { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+.bar-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.bar-label { width:70px; font-size:10px; color:var(--text); text-align:right; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track { flex:1; height:16px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:3px; min-width:2px; transition:width 0.3s; }
+.bar-value { width:75px; font-size:10px; font-family:'SF Mono',monospace; flex-shrink:0; }
+
+/* Table */
+.table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:16px; }
+.table-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border); }
+.table-header h3 { font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+.table-header span { font-size:11px; color:var(--text2); }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th { text-align:left; font-weight:600; color:var(--text2); padding:7px 10px; border-bottom:1px solid var(--border); font-size:10px; text-transform:uppercase; cursor:pointer; user-select:none; white-space:nowrap; }
+th:hover { color:var(--blue); }
+th .sort-arrow { font-size:8px; margin-left:2px; }
+td { padding:5px 10px; border-bottom:1px solid rgba(48,54,61,0.3); font-family:'SF Mono',monospace; font-size:11px; }
+tr:hover td { background:rgba(88,166,255,0.04); }
+tr.winner td { border-left:2px solid var(--green); }
+tr.loser td { border-left:2px solid var(--red); }
+.right { text-align:right; }
+
+/* Hourly heatmap */
+.heatmap { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; }
+.heat-cell { border-radius:5px; padding:8px; text-align:center; cursor:pointer; transition:transform 0.15s; }
+.heat-cell:hover { transform:scale(1.03); }
+.heat-cell .hour { font-size:10px; color:var(--text2); }
+.heat-cell .pnl { font-size:15px; font-weight:700; margin:2px 0; }
+.heat-cell .detail { font-size:9px; color:var(--text2); }
+
+/* Activity timeline */
+.timeline { display:flex; flex-direction:column; gap:6px; }
+.tl-item { display:flex; align-items:flex-start; gap:10px; padding:6px 10px; border-radius:5px; background:var(--bg3); font-size:11px; }
+.tl-time { color:var(--cyan); font-family:'SF Mono',monospace; flex-shrink:0; min-width:60px; }
+.tl-type { font-weight:600; min-width:90px; flex-shrink:0; }
+.tl-msg { color:var(--text2); flex:1; }
+.tl-type.start { color:var(--green); }
+.tl-type.stop { color:var(--red); }
+.tl-type.error { color:var(--red); }
+.tl-type.signal { color:var(--yellow); }
+.tl-type.skipped { color:var(--text2); }
+.tl-type.flush { color:var(--purple); }
+.tl-type.close { color:var(--red); }
+
+/* Scan stats */
+.scan-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+.scan-stat { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+.scan-stat .val { font-size:24px; font-weight:700; }
+.scan-stat .lbl { font-size:9px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+@media (max-width:768px) {
+  .hero { grid-template-columns:repeat(3,1fr); }
+  .charts { grid-template-columns:1fr; }
+  .heatmap { grid-template-columns:repeat(3,1fr); }
+  .filters { flex-direction:column; }
+  .scan-stats { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<h1>Interactive Performance Report</h1>
+<div class="subtitle">Wednesday, March 11, 2026 &nbsp;|&nbsp; Live Mode (no live trades placed) &nbsp;|&nbsp; Paper positions flushed &nbsp;|&nbsp; SPY-only scanning (S10 + S11)</div>
+
+<!-- Filters -->
+<div class="filters" id="filters">
+  <div class="filter-group">
+    <label>Ticker</label>
+    <select id="f-sym" multiple size="4">
+      <option value="">All</option>
+      <option value="AXP">AXP</option><option value="DASH">DASH</option><option value="LOW">LOW</option><option value="MA">MA</option><option value="NFLX">NFLX</option><option value="PLTR">PLTR</option><option value="PYPL">PYPL</option><option value="QCOM">QCOM</option><option value="V">V</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Strategy</label>
+    <select id="f-strat" multiple size="4">
+      <option value="">All</option>
+      <option value="strategy-1">S1 Mean Rev</option><option value="strategy2_midline_bounce_1d_1h_15m">S2 Midline</option><option value="strategy4_magnet_effect_gap_far_from_ma20_15m">S4 Magnet</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Direction</label>
+    <select id="f-dir">
+      <option value="">All</option>
+      <option value="C">Calls</option>
+      <option value="P">Puts</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Exit Type</label>
+    <select id="f-exit">
+      <option value="">All</option>
+      <option value="Flush">Flush</option><option value="Manual">Manual</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Result</label>
+    <select id="f-result">
+      <option value="">All</option>
+      <option value="win">Winners</option>
+      <option value="loss">Losers</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Entry After</label>
+    <input type="time" id="f-time-from" value="09:30">
+  </div>
+  <div class="filter-group">
+    <label>Entry Before</label>
+    <input type="time" id="f-time-to" value="16:00">
+  </div>
+  <div class="filter-group">
+    <label>Min P&L</label>
+    <input type="number" id="f-pnl-min" placeholder="-999" style="width:70px">
+  </div>
+  <div class="filter-group">
+    <label>Max P&L</label>
+    <input type="number" id="f-pnl-max" placeholder="999" style="width:70px">
+  </div>
+  <div class="filter-group" style="display:flex;flex-direction:row;gap:6px;align-self:flex-end;">
+    <button class="btn" onclick="applyFilters()">Apply</button>
+    <button class="btn btn-reset" onclick="resetFilters()">Reset</button>
+  </div>
+</div>
+
+<div class="filter-pills" id="active-pills"></div>
+
+<!-- Hero Cards -->
+<div class="hero" id="hero"></div>
+
+<!-- Scan Activity Stats -->
+<div class="scan-stats" id="scan-stats"></div>
+
+<!-- Charts -->
+<div class="charts">
+  <div class="chart-card">
+    <h3>P&L by Symbol</h3>
+    <div id="chart-sym"></div>
+  </div>
+  <div class="chart-card">
+    <h3>Capital Deployed by Symbol</h3>
+    <div id="chart-sym-cap"></div>
+  </div>
+</div>
+<div class="charts">
+  <div class="chart-card">
+    <h3>P&L by Strategy</h3>
+    <div id="chart-strat"></div>
+  </div>
+  <div class="chart-card">
+    <h3>Capital Deployed by Strategy</h3>
+    <div id="chart-strat-cap"></div>
+  </div>
+</div>
+
+<!-- Hourly Heatmap -->
+<div class="chart-card" style="margin-bottom:16px;">
+  <h3>Hourly Heatmap <span style="font-size:9px;color:var(--text2);font-weight:400;">(click to filter)</span></h3>
+  <div class="heatmap" id="heatmap"></div>
+</div>
+
+<!-- Direction & Exit breakdown -->
+<div class="charts">
+  <div class="chart-card">
+    <h3>Direction Breakdown</h3>
+    <div id="chart-dir"></div>
+  </div>
+  <div class="chart-card">
+    <h3>Exit Type Breakdown</h3>
+    <div id="chart-exit"></div>
+  </div>
+</div>
+
+<!-- SPY Signal Detection Timeline -->
+<div class="chart-card" style="margin-bottom:16px;">
+  <h3>SPY Signal Detection Timeline (S10 + S11)</h3>
+  <div style="font-size:10px;color:var(--text2);margin-bottom:10px;">Signals were detected but all were skipped due to age exceeding the 600s max. No orders were placed.</div>
+  <div id="signal-timeline"></div>
+</div>
+
+<!-- Activity Timeline -->
+<div class="chart-card" style="margin-bottom:16px;">
+  <h3>Auto Trader Activity Timeline</h3>
+  <div class="timeline" id="activity-timeline"></div>
+</div>
+
+<!-- SPY Price Chart (text-based) -->
+<div class="chart-card" style="margin-bottom:16px;">
+  <h3>SPY Intraday Price (Scan Snapshots)</h3>
+  <div id="spy-chart" style="font-family:'SF Mono',monospace;font-size:10px;line-height:1.6;"></div>
+</div>
+
+<!-- Trade Table -->
+<div class="table-wrap">
+  <div class="table-header">
+    <h3>Closed Positions (Paper Cleanup)</h3>
+    <span id="table-count"></span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table id="trade-table">
+      <thead>
+        <tr>
+          <th data-col="et" onclick="sortTable('et')">Entry <span class="sort-arrow"></span></th>
+          <th data-col="xt" onclick="sortTable('xt')">Exit <span class="sort-arrow"></span></th>
+          <th data-col="sym" onclick="sortTable('sym')">Symbol <span class="sort-arrow"></span></th>
+          <th data-col="strat" onclick="sortTable('strat')">Strategy <span class="sort-arrow"></span></th>
+          <th data-col="dir" onclick="sortTable('dir')">Dir <span class="sort-arrow"></span></th>
+          <th data-col="strike" onclick="sortTable('strike')" class="right">Strike <span class="sort-arrow"></span></th>
+          <th data-col="qty" onclick="sortTable('qty')" class="right">Qty <span class="sort-arrow"></span></th>
+          <th data-col="entry" onclick="sortTable('entry')" class="right">Entry$ <span class="sort-arrow"></span></th>
+          <th data-col="hwm" onclick="sortTable('hwm')" class="right">HWM <span class="sort-arrow"></span></th>
+          <th data-col="exit" onclick="sortTable('exit')" class="right">Exit$ <span class="sort-arrow"></span></th>
+          <th data-col="pnl" onclick="sortTable('pnl')" class="right">P&L <span class="sort-arrow"></span></th>
+          <th data-col="pnl_pct" onclick="sortTable('pnl_pct')" class="right">Return <span class="sort-arrow"></span></th>
+          <th data-col="hold" onclick="sortTable('hold')" class="right">Hold <span class="sort-arrow"></span></th>
+          <th data-col="exit_type" onclick="sortTable('exit_type')">Exit Type <span class="sort-arrow"></span></th>
+          <th data-col="cap" onclick="sortTable('cap')" class="right">Capital <span class="sort-arrow"></span></th>
+        </tr>
+      </thead>
+      <tbody id="trade-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div style="margin-top:30px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text2);text-align:center;">
+  OP3 Trading Platform &nbsp;|&nbsp; March 11, 2026 &nbsp;|&nbsp; Live Mode (paper cleanup day) &nbsp;|&nbsp; Interactive Report
+</div>
+
+<script>
+const ALL_TRADES = [
+  {"sym":"PYPL","strat":"strategy4_magnet_effect_gap_far_from_ma20_15m","dir":"C","strike":46.5,"qty":98,"entry":0.51,"exit":0.51,"hwm":0.42,"pnl":0,"pnl_pct":0.0,"et":"03/10 13:59","xt":"10:52","ets":1773165542,"hold":1254,"exit_type":"Flush","delta":0.333,"cap":4998,"close_reason":"Manual flush"},
+  {"sym":"LOW","strat":"strategy-1","dir":"C","strike":257.5,"qty":43,"entry":1.16,"exit":1.16,"hwm":1.27,"pnl":0,"pnl_pct":0.0,"et":"03/10 12:22","xt":"10:53","ets":1773159779,"hold":1350,"exit_type":"Flush","delta":0.256,"cap":4988,"close_reason":"Manual flush"},
+  {"sym":"PLTR","strat":"strategy-1","dir":"P","strike":150.0,"qty":15,"entry":3.20,"exit":3.20,"hwm":3.10,"pnl":0,"pnl_pct":0.0,"et":"03/10 12:08","xt":"10:53","ets":1773158896,"hold":1365,"exit_type":"Flush","delta":-0.460,"cap":4800,"close_reason":"Manual flush"},
+  {"sym":"V","strat":"strategy-1","dir":"C","strike":315.0,"qty":2,"entry":4.60,"exit":4.60,"hwm":4.85,"pnl":0,"pnl_pct":0.0,"et":"03/09 15:54","xt":"10:53","ets":1773086071,"hold":2579,"exit_type":"Flush","delta":0.499,"cap":920,"close_reason":"Manual flush"},
+  {"sym":"AXP","strat":"strategy-1","dir":"C","strike":305.0,"qty":1,"entry":6.25,"exit":6.25,"hwm":5.40,"pnl":0,"pnl_pct":0.0,"et":"03/09 15:50","xt":"10:53","ets":1773085822,"hold":2583,"exit_type":"Flush","delta":0.529,"cap":625,"close_reason":"Manual flush"},
+  {"sym":"QCOM","strat":"strategy-1","dir":"C","strike":138.0,"qty":3,"entry":2.55,"exit":2.55,"hwm":2.47,"pnl":0,"pnl_pct":0.0,"et":"03/09 15:46","xt":"10:53","ets":1773085602,"hold":2587,"exit_type":"Flush","delta":0.511,"cap":765,"close_reason":"Manual flush"},
+  {"sym":"MA","strat":"strategy2_midline_bounce_1d_1h_15m","dir":"P","strike":512.5,"qty":1,"entry":8.10,"exit":8.10,"hwm":8.15,"pnl":0,"pnl_pct":0.0,"et":"03/09 12:30","xt":"10:53","ets":1773073812,"hold":2783,"exit_type":"Flush","delta":-0.471,"cap":810,"close_reason":"Manual flush"},
+  {"sym":"NFLX","strat":"strategy-1","dir":"P","strike":97.0,"qty":5,"entry":1.90,"exit":1.90,"hwm":2.02,"pnl":0,"pnl_pct":0.0,"et":"03/09 10:34","xt":"10:53","ets":1773066846,"hold":2899,"exit_type":"Flush","delta":-0.495,"cap":950,"close_reason":"Manual flush"},
+  {"sym":"DASH","strat":"strategy2_midline_bounce_1d_1h_15m","dir":"P","strike":157.5,"qty":7,"entry":1.29,"exit":0.56,"hwm":1.35,"pnl":-513,"pnl_pct":-57.0,"et":"03/09 12:33","xt":"10:59","ets":1773074012,"hold":2786,"exit_type":"Manual","delta":-0.121,"cap":903,"close_reason":"Manual close"}
+];
+
+const STRAT_NAMES = {
+  "strategy-1":"S1 Mean Rev",
+  "strategy2_midline_bounce_1d_1h_15m":"S2 Midline",
+  "strategy4_magnet_effect_gap_far_from_ma20_15m":"S4 Magnet",
+  "strategy10_0dte_trend":"S10 Trend",
+  "strategy11_ict_price_action":"S11 ICT"
+};
+const STRAT_COLORS = {
+  'strategy-1':'#42a5f5',
+  'strategy2_midline_bounce_1d_1h_15m':'#66bb6a',
+  'strategy4_magnet_effect_gap_far_from_ma20_15m':'#ef5350',
+  'strategy10_0dte_trend':'#7e57c2',
+  'strategy11_ict_price_action':'#29b6f6'
+};
+
+// Signal detection events
+const SIGNALS = [
+  {time:"11:52",strats:["S11 ICT"],skipped:true,reason:"Signal 1645s old (max 600s), price moved away"},
+  {time:"12:06",strats:["S10 Trend","S11 ICT"],skipped:true,reason:"Signals 1267-1567s old (max 600s), price moved away"},
+  {time:"12:27",strats:["S11 ICT"],skipped:true,reason:"Signal 1619s old (max 600s), price moved away"},
+  {time:"13:33",strats:["S10 Trend","S11 ICT x3"],skipped:true,reason:"S10 outside hours (11:30 cutoff), S11 signals 5580-7680s old"},
+  {time:"13:56",strats:["S11 ICT"],skipped:true,reason:"Signal 1241s old (max 600s), price moved away"}
+];
+
+// Activity events
+const ACTIVITY = [
+  {time:"10:28",type:"start",msg:"Auto trader started. Scanning 46 tickers (all symbols, pre-fix)."},
+  {time:"10:28",type:"info",msg:"TP monitoring: 9 open paper positions from previous days. Batch fetching quotes every ~13s."},
+  {time:"10:53",type:"flush",msg:"8 paper positions manually flushed (PYPL, LOW, PLTR, V, AXP, QCOM, MA, NFLX) at entry price. $0 P&L."},
+  {time:"10:59",type:"close",msg:"DASH manually closed at $0.56 (entry $1.29). P&L: -$513 (-57%)."},
+  {time:"11:52",type:"signal",msg:"SPY S11 ICT signal detected but skipped — signal too old (1645s > 600s max)."},
+  {time:"12:06",type:"signal",msg:"SPY S10 + S11 signals detected but both skipped — signals too old."},
+  {time:"12:18",type:"stop",msg:"Auto trader stopped by user."},
+  {time:"12:20",type:"start",msg:"Auto trader restarted. Still scanning 46 tickers."},
+  {time:"12:27",type:"signal",msg:"SPY S11 ICT signal detected but skipped — signal 1619s old."},
+  {time:"13:30",type:"stop",msg:"Auto trader stopped."},
+  {time:"13:30",type:"start",msg:"Restarted. Now scanning only 1 ticker (SPY) after ticker filter fix applied."},
+  {time:"13:30",type:"error",msg:"SPY scan failed: IB Gateway — no clients connected."},
+  {time:"13:31",type:"error",msg:"SPY scan failed again: IB Gateway connection issue (2 more failures)."},
+  {time:"13:33",type:"info",msg:"IB Gateway reconnected. Scanning SPY only. Capital counter reset."},
+  {time:"13:33",type:"signal",msg:"SPY 4 signals (S10 + S11x3) detected but ALL skipped — S10 outside hours, S11 signals too old."},
+  {time:"13:56",type:"signal",msg:"SPY S11 ICT signal detected but skipped — signal 1241s old."},
+  {time:"14:32",type:"stop",msg:"Auto trader stopped. No trades placed all day in live mode."}
+];
+
+// SPY prices from scan contexts
+const SPY_PRICES = [
+  {t:"10:29",p:677.3},{t:"10:33",p:677.35},{t:"10:38",p:677.75},{t:"10:41",p:676.13},{t:"10:44",p:675.33},
+  {t:"10:47",p:676.44},{t:"10:50",p:675.52},{t:"10:54",p:676.55},{t:"10:59",p:677.04},{t:"11:03",p:677.21},
+  {t:"11:09",p:677.75},{t:"11:15",p:677.99},{t:"11:21",p:677.22},{t:"11:27",p:677.11},{t:"11:33",p:675.24},
+  {t:"11:39",p:675.56},{t:"11:44",p:675.71},{t:"11:48",p:674.21},{t:"11:54",p:674.94},{t:"12:00",p:674.78},
+  {t:"12:06",p:674.25},{t:"12:11",p:674.74},{t:"12:17",p:674.2},{t:"12:22",p:673.7},{t:"12:28",p:674.18},
+  {t:"12:34",p:674.12},{t:"12:40",p:674.65},{t:"12:47",p:675.14},{t:"12:53",p:675.82},{t:"12:59",p:675.74},
+  {t:"13:05",p:675.51},{t:"13:11",p:675.84},{t:"13:18",p:676.35},{t:"13:24",p:676.47},{t:"13:30",p:676.03},
+  {t:"13:36",p:675.83},{t:"13:42",p:676.3},{t:"13:48",p:676.32},{t:"13:53",p:673.46},{t:"13:55",p:674.86},
+  {t:"14:00",p:674.53},{t:"14:06",p:675.38},{t:"14:12",p:674.82},{t:"14:18",p:674.96},{t:"14:24",p:674.6},
+  {t:"14:30",p:674.34}
+];
+
+const OPEN_POSITIONS = [];
+
+let filtered = [...ALL_TRADES];
+let sortCol = 'ets';
+let sortAsc = true;
+
+function fmt(n) { return n >= 0 ? '+$' + n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}) : '-$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(1) + '%'; }
+function sn(s) { return STRAT_NAMES[s] || s.replace(/strategy/,'S').replace(/_/g,' ').substring(0,15); }
+
+function getFilters() {
+  const symSel = document.getElementById('f-sym');
+  const stratSel = document.getElementById('f-strat');
+  const syms = [...symSel.selectedOptions].map(o=>o.value).filter(v=>v);
+  const strats = [...stratSel.selectedOptions].map(o=>o.value).filter(v=>v);
+  return {
+    syms, stratIds: strats,
+    dir: document.getElementById('f-dir').value,
+    exitType: document.getElementById('f-exit').value,
+    result: document.getElementById('f-result').value,
+    timeFrom: document.getElementById('f-time-from').value || '09:30',
+    timeTo: document.getElementById('f-time-to').value || '16:00',
+    pnlMin: document.getElementById('f-pnl-min').value,
+    pnlMax: document.getElementById('f-pnl-max').value,
+  };
+}
+
+function applyFilters() {
+  const f = getFilters();
+  filtered = ALL_TRADES.filter(t => {
+    if (f.syms.length && !f.syms.includes(t.sym)) return false;
+    if (f.stratIds.length && !f.stratIds.includes(t.strat)) return false;
+    if (f.dir && t.dir !== f.dir) return false;
+    if (f.exitType && t.exit_type !== f.exitType) return false;
+    if (f.result === 'win' && t.pnl < 0) return false;
+    if (f.result === 'loss' && t.pnl >= 0) return false;
+    const etTime = t.et.length > 5 ? t.et.slice(-5) : t.et;
+    if (etTime < f.timeFrom || etTime > f.timeTo) return false;
+    if (f.pnlMin && t.pnl < Number(f.pnlMin)) return false;
+    if (f.pnlMax && t.pnl > Number(f.pnlMax)) return false;
+    return true;
+  });
+  renderAll();
+}
+
+function resetFilters() {
+  document.getElementById('f-sym').selectedIndex = 0;
+  document.getElementById('f-strat').selectedIndex = 0;
+  document.getElementById('f-dir').value = '';
+  document.getElementById('f-exit').value = '';
+  document.getElementById('f-result').value = '';
+  document.getElementById('f-time-from').value = '09:30';
+  document.getElementById('f-time-to').value = '16:00';
+  document.getElementById('f-pnl-min').value = '';
+  document.getElementById('f-pnl-max').value = '';
+  filtered = [...ALL_TRADES];
+  renderAll();
+}
+
+function quickFilter(key, val) {
+  resetFilters();
+  if (key === 'sym') {
+    const sel = document.getElementById('f-sym');
+    [...sel.options].forEach(o => o.selected = o.value === val);
+  } else if (key === 'strat') {
+    const sel = document.getElementById('f-strat');
+    [...sel.options].forEach(o => o.selected = o.value === val);
+  } else if (key === 'dir') {
+    document.getElementById('f-dir').value = val;
+  } else if (key === 'exit') {
+    document.getElementById('f-exit').value = val;
+  } else if (key === 'hour') {
+    document.getElementById('f-time-from').value = val + ':00';
+    const nextH = String(Number(val)+1).padStart(2,'0');
+    document.getElementById('f-time-to').value = nextH + ':00';
+  }
+  applyFilters();
+}
+
+function renderPills() {
+  const f = getFilters();
+  const pills = [];
+  f.syms.forEach(s => pills.push({label:'Ticker: '+s,key:'sym'}));
+  f.stratIds.forEach(s => pills.push({label:'Strategy: '+sn(s),key:'strat'}));
+  if (f.dir) pills.push({label:'Dir: '+(f.dir==='C'?'Calls':'Puts'),key:'dir'});
+  if (f.exitType) pills.push({label:'Exit: '+f.exitType,key:'exit'});
+  if (f.result) pills.push({label:f.result==='win'?'Winners':'Losers',key:'result'});
+  if (f.timeFrom !== '09:30' || f.timeTo !== '16:00') pills.push({label:f.timeFrom+' - '+f.timeTo,key:'time'});
+  document.getElementById('active-pills').innerHTML = pills.map(p =>
+    `<span class="pill">${p.label} <span class="x" onclick="resetFilters()">&times;</span></span>`
+  ).join('');
+}
+
+function renderHero() {
+  const t = filtered;
+  const pnl = t.reduce((s,x)=>s+x.pnl,0);
+  const wins = t.filter(x=>x.pnl>=0).length;
+  const losses = t.filter(x=>x.pnl<0).length;
+  const wr = t.length ? (wins/t.length*100).toFixed(1) : '0';
+  const cap = t.reduce((s,x)=>s+x.cap,0);
+  const roi = cap ? (pnl/cap*100).toFixed(1) : '0';
+  const best = t.length ? Math.max(...t.map(x=>x.pnl)) : 0;
+  const worst = t.length ? Math.min(...t.map(x=>x.pnl)) : 0;
+  const avgHold = t.length ? (t.reduce((s,x)=>s+x.hold,0)/t.length).toFixed(0) : 0;
+  const winPnl = t.filter(x=>x.pnl>=0).reduce((s,x)=>s+x.pnl,0);
+  const lossPnl = Math.abs(t.filter(x=>x.pnl<0).reduce((s,x)=>s+x.pnl,0));
+  const pf = lossPnl ? (winPnl/lossPnl).toFixed(2) : winPnl > 0 ? '&#8734;' : '0';
+  const flushCount = t.filter(x=>x.exit_type==='Flush').length;
+
+  document.getElementById('hero').innerHTML = `
+    <div class="hero-card"><div class="label">P&L</div><div class="value ${pnl>=0?'green':'red'}">${fmt(pnl)}</div><div class="sub">${roi}% ROI</div></div>
+    <div class="hero-card"><div class="label">Capital At Risk</div><div class="value" style="color:var(--purple)">$${cap.toLocaleString()}</div><div class="sub">all closed</div></div>
+    <div class="hero-card"><div class="label">Closed Positions</div><div class="value" style="color:var(--blue)">${t.length}</div><div class="sub">${flushCount} flushed / ${losses} loss</div></div>
+    <div class="hero-card"><div class="label">Win Rate</div><div class="value" style="color:${Number(wr)>=50?'var(--green)':'var(--yellow)'}">${wr}%</div><div class="sub">PF: ${pf}x</div></div>
+    <div class="hero-card"><div class="label">Best</div><div class="value green">${fmt(best)}</div></div>
+    <div class="hero-card"><div class="label">Worst</div><div class="value red">${fmt(worst)}</div></div>
+    <div class="hero-card"><div class="label">Avg Hold</div><div class="value" style="color:var(--cyan)">${avgHold}m</div></div>
+  `;
+}
+
+function renderScanStats() {
+  document.getElementById('scan-stats').innerHTML = `
+    <div class="scan-stat"><div class="val" style="color:var(--blue)">216</div><div class="lbl">Scans Performed</div></div>
+    <div class="scan-stat"><div class="val" style="color:var(--yellow)">5</div><div class="lbl">Signal Detections</div></div>
+    <div class="scan-stat"><div class="val" style="color:var(--red)">9/9</div><div class="lbl">Signals Skipped (age)</div></div>
+    <div class="scan-stat"><div class="val" style="color:var(--text2)">0</div><div class="lbl">Live Trades Placed</div></div>
+  `;
+}
+
+function renderBarChart(containerId, data, colorFn, clickKey) {
+  const maxAbs = Math.max(...data.map(d=>Math.abs(d.value)),1);
+  const container = document.getElementById(containerId);
+  container.innerHTML = data.slice(0,12).map(d => {
+    const pct = (Math.abs(d.value)/maxAbs*100).toFixed(1);
+    const color = colorFn(d);
+    const cls = d.value >= 0 ? 'green' : 'red';
+    return `<div class="bar-row" style="cursor:pointer" onclick="quickFilter('${clickKey}','${d.id}')">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};opacity:${d.value>=0?1:0.7}"></div></div>
+      <span class="bar-value ${cls}">${fmt(d.value)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSymChart() {
+  const byS = {};
+  filtered.forEach(t => {
+    if (!byS[t.sym]) byS[t.sym] = {pnl:0,count:0,cap:0};
+    byS[t.sym].pnl += t.pnl;
+    byS[t.sym].count++;
+    byS[t.sym].cap += t.cap;
+  });
+  const data = Object.entries(byS).map(([s,d]) => ({id:s,label:s,value:Math.round(d.pnl),count:d.count,cap:d.cap})).sort((a,b)=>b.value-a.value);
+  renderBarChart('chart-sym', data, d=> d.value>=0?'var(--green)':'var(--red)', 'sym');
+}
+
+function renderSymCapChart() {
+  const byS = {};
+  filtered.forEach(t => {
+    if (!byS[t.sym]) byS[t.sym] = {pnl:0,cap:0,count:0};
+    byS[t.sym].pnl += t.pnl;
+    byS[t.sym].cap += t.cap;
+    byS[t.sym].count++;
+  });
+  const data = Object.entries(byS).map(([s,d]) => ({id:s,label:s,cap:Math.round(d.cap),pnl:Math.round(d.pnl),count:d.count,roi:d.cap?(d.pnl/d.cap*100).toFixed(0):0})).sort((a,b)=>b.cap-a.cap);
+  const maxCap = Math.max(...data.map(d=>d.cap),1);
+  document.getElementById('chart-sym-cap').innerHTML = data.slice(0,12).map(d => {
+    const pct = (d.cap/maxCap*100).toFixed(1);
+    return `<div class="bar-row" style="cursor:pointer" onclick="quickFilter('sym','${d.id}')">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--purple);"></div></div>
+      <span class="bar-value" style="color:var(--purple)">$${d.cap.toLocaleString()}</span>
+    </div>
+    <div style="font-size:9px;color:var(--text2);margin:-2px 0 4px 78px">${d.count}t · P&L: <span class="${d.pnl>=0?'green':'red'}">${fmt(d.pnl)}</span> · ROI: <span class="${Number(d.roi)>=0?'green':'red'}">${d.roi}%</span></div>`;
+  }).join('');
+}
+
+function renderStratChart() {
+  const byS = {};
+  filtered.forEach(t => {
+    if (!byS[t.strat]) byS[t.strat] = {pnl:0,count:0,cap:0};
+    byS[t.strat].pnl += t.pnl;
+    byS[t.strat].count++;
+    byS[t.strat].cap += t.cap;
+  });
+  const data = Object.entries(byS).map(([s,d]) => ({id:s,label:sn(s),value:Math.round(d.pnl),count:d.count,cap:d.cap})).sort((a,b)=>b.value-a.value);
+  renderBarChart('chart-strat', data, d=> STRAT_COLORS[d.id]||'#888', 'strat');
+
+  const maxCap = Math.max(...data.map(d=>d.cap),1);
+  document.getElementById('chart-strat-cap').innerHTML = data.sort((a,b)=>b.cap-a.cap).map(d => {
+    const pct = (d.cap/maxCap*100).toFixed(1);
+    const roi = d.cap ? (d.value/d.cap*100).toFixed(0) : 0;
+    return `<div class="bar-row" style="cursor:pointer" onclick="quickFilter('strat','${d.id}')">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${STRAT_COLORS[d.id]||'#888'};opacity:0.7"></div></div>
+      <span class="bar-value" style="color:var(--purple)">$${Math.round(d.cap).toLocaleString()}</span>
+    </div>
+    <div style="font-size:9px;color:var(--text2);margin:-2px 0 4px 78px">${d.count}t · ROI: <span class="${Number(roi)>=0?'green':'red'}">${roi}%</span></div>`;
+  }).join('');
+}
+
+function renderHeatmap() {
+  const byH = {};
+  filtered.forEach(t => {
+    const h = t.xt.substring(0,2);
+    if (!byH[h]) byH[h] = {pnl:0,count:0,wins:0,cap:0};
+    byH[h].pnl += t.pnl;
+    byH[h].count++;
+    byH[h].cap += t.cap;
+    if (t.pnl >= 0) byH[h].wins++;
+  });
+  const hours = Object.keys(byH).sort();
+  document.getElementById('heatmap').innerHTML = hours.map(h => {
+    const d = byH[h];
+    const isPos = d.pnl >= 0;
+    const intensity = Math.min(Math.abs(d.pnl) / 2000, 0.4);
+    const c = isPos ? '57,217,138' : '255,107,107';
+    const roi = d.cap ? (d.pnl/d.cap*100).toFixed(0) : 0;
+    return `<div class="heat-cell" style="background:rgba(${c},${(intensity*0.6+0.05).toFixed(2)});border:1px solid rgba(${c},${(intensity+0.15).toFixed(2)})" onclick="quickFilter('hour','${h}')">
+      <div class="hour">${h}:00</div>
+      <div class="pnl ${isPos?'green':'red'}">${fmt(Math.round(d.pnl))}</div>
+      <div class="detail">${d.count}t · ${d.wins}W/${d.count-d.wins}L</div>
+      <div class="detail" style="color:var(--purple)">$${Math.round(d.cap).toLocaleString()} · ${roi}% ROI</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDirChart() {
+  const calls = filtered.filter(t=>t.dir==='C');
+  const puts = filtered.filter(t=>t.dir==='P');
+  const cPnl = calls.reduce((s,t)=>s+t.pnl,0);
+  const pPnl = puts.reduce((s,t)=>s+t.pnl,0);
+  const cCap = calls.reduce((s,t)=>s+t.cap,0);
+  const pCap = puts.reduce((s,t)=>s+t.cap,0);
+  const cW = calls.filter(t=>t.pnl>=0).length;
+  const pW = puts.filter(t=>t.pnl>=0).length;
+  const cRoi = cCap ? (cPnl/cCap*100).toFixed(0) : 0;
+  const pRoi = pCap ? (pPnl/pCap*100).toFixed(0) : 0;
+  const maxAbs = Math.max(Math.abs(cPnl),Math.abs(pPnl),1);
+  document.getElementById('chart-dir').innerHTML = `
+    <div class="bar-row" style="cursor:pointer" onclick="quickFilter('dir','C')">
+      <span class="bar-label">Calls (${calls.length})</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(Math.abs(cPnl)/maxAbs*100).toFixed(0)}%;background:${cPnl>=0?'var(--green)':'var(--red)'};"></div></div>
+      <span class="bar-value ${cPnl>=0?'green':'red'}">${fmt(Math.round(cPnl))}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:0 0 8px 78px">${cW}W / ${calls.length-cW}L (${calls.length?(cW/calls.length*100).toFixed(0):0}%) · <span style="color:var(--purple)">$${Math.round(cCap).toLocaleString()}</span> deployed · ${cRoi}% ROI</div>
+    <div class="bar-row" style="cursor:pointer" onclick="quickFilter('dir','P')">
+      <span class="bar-label">Puts (${puts.length})</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(Math.abs(pPnl)/maxAbs*100).toFixed(0)}%;background:${pPnl>=0?'var(--green)':'var(--red)'};"></div></div>
+      <span class="bar-value ${pPnl>=0?'green':'red'}">${fmt(Math.round(pPnl))}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:0 0 0 78px">${pW}W / ${puts.length-pW}L (${puts.length?(pW/puts.length*100).toFixed(0):0}%) · <span style="color:var(--purple)">$${Math.round(pCap).toLocaleString()}</span> deployed · ${pRoi}% ROI</div>
+  `;
+}
+
+function renderExitChart() {
+  const byE = {};
+  filtered.forEach(t => {
+    if (!byE[t.exit_type]) byE[t.exit_type] = {pnl:0,count:0,wins:0,cap:0};
+    byE[t.exit_type].pnl += t.pnl;
+    byE[t.exit_type].count++;
+    byE[t.exit_type].cap += t.cap;
+    if (t.pnl >= 0) byE[t.exit_type].wins++;
+  });
+  const colors = {Flush:'var(--purple)',Manual:'var(--red)',Trail:'var(--green)',Stop:'var(--red)',Time:'var(--cyan)'};
+  const data = Object.entries(byE).sort((a,b)=>b[1].pnl-a[1].pnl);
+  const maxAbs = Math.max(...data.map(([,d])=>Math.abs(d.pnl)),1);
+  document.getElementById('chart-exit').innerHTML = data.map(([type,d]) => {
+    const roi = d.cap ? (d.pnl/d.cap*100).toFixed(0) : 0;
+    return `
+    <div class="bar-row" style="cursor:pointer" onclick="quickFilter('exit','${type}')">
+      <span class="bar-label">${type} (${d.count})</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(Math.abs(d.pnl)/maxAbs*100).toFixed(0)}%;background:${colors[type]||'#888'};opacity:${d.pnl>=0?1:0.7}"></div></div>
+      <span class="bar-value ${d.pnl>=0?'green':'red'}">${fmt(Math.round(d.pnl))}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:0 0 6px 78px">${d.wins}W / ${d.count-d.wins}L · <span style="color:var(--purple)">$${Math.round(d.cap).toLocaleString()}</span> · ${roi}% ROI</div>`;
+  }).join('');
+}
+
+function renderSignalTimeline() {
+  document.getElementById('signal-timeline').innerHTML = SIGNALS.map(s => {
+    return `<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 10px;border-radius:5px;background:var(--bg3);font-size:11px;margin-bottom:4px;">
+      <span style="color:var(--cyan);font-family:'SF Mono',monospace;min-width:45px;">${s.time}</span>
+      <span style="color:var(--yellow);font-weight:600;min-width:100px;">${s.strats.join(', ')}</span>
+      <span style="color:var(--red);font-weight:600;min-width:60px;">SKIPPED</span>
+      <span style="color:var(--text2);flex:1;">${s.reason}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderActivityTimeline() {
+  const typeStyles = {
+    start: {cls:'start',label:'START'},
+    stop: {cls:'stop',label:'STOP'},
+    error: {cls:'error',label:'ERROR'},
+    signal: {cls:'signal',label:'SIGNAL'},
+    flush: {cls:'flush',label:'FLUSH'},
+    close: {cls:'close',label:'CLOSE'},
+    info: {cls:'',label:'INFO'}
+  };
+  document.getElementById('activity-timeline').innerHTML = ACTIVITY.map(a => {
+    const s = typeStyles[a.type] || {cls:'',label:a.type.toUpperCase()};
+    return `<div class="tl-item">
+      <span class="tl-time">${a.time}</span>
+      <span class="tl-type ${s.cls}">${s.label}</span>
+      <span class="tl-msg">${a.msg}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSpyChart() {
+  if (!SPY_PRICES.length) return;
+  const prices = SPY_PRICES.map(p=>p.p);
+  const hi = Math.max(...prices);
+  const lo = Math.min(...prices);
+  const range = hi - lo || 1;
+  const chartW = 80;
+
+  let html = `<div style="margin-bottom:6px;color:var(--text2);">Open: <span style="color:var(--text)">${prices[0]}</span> &nbsp; High: <span class="green">${hi}</span> &nbsp; Low: <span class="red">${lo}</span> &nbsp; Last: <span style="color:var(--text)">${prices[prices.length-1]}</span> &nbsp; Range: <span style="color:var(--yellow)">${(hi-lo).toFixed(2)}</span></div>`;
+  html += '<div style="line-height:1.3;">';
+
+  // Sample every 3rd point for readability
+  for (let i = 0; i < SPY_PRICES.length; i += 2) {
+    const sp = SPY_PRICES[i];
+    const pos = Math.round((sp.p - lo) / range * chartW);
+    const bar = '.'.repeat(pos) + '|' + '.'.repeat(Math.max(0, chartW - pos - 1));
+    const color = sp.p >= prices[0] ? 'var(--green)' : 'var(--red)';
+    html += `<span style="color:var(--text2)">${sp.t}</span> <span style="color:${color}">${sp.p.toFixed(2)}</span> <span style="color:var(--bg3)">${bar}</span>\n`;
+  }
+  html += '</div>';
+  document.getElementById('spy-chart').innerHTML = html;
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = col === 'pnl' ? false : true; }
+  renderTable();
+}
+
+function renderTable() {
+  const sorted = [...filtered].sort((a,b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sortAsc ? va - vb : vb - va;
+  });
+
+  document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
+  const activeCol = document.querySelector(`th[data-col="${sortCol}"] .sort-arrow`);
+  if (activeCol) activeCol.textContent = sortAsc ? ' \u25B2' : ' \u25BC';
+
+  document.getElementById('table-count').textContent = `${sorted.length} positions closed`;
+  document.getElementById('trade-tbody').innerHTML = sorted.map(t => `
+    <tr class="${t.pnl>=0?'winner':'loser'}">
+      <td>${t.et}</td>
+      <td>${t.xt}</td>
+      <td style="cursor:pointer;color:var(--blue)" onclick="quickFilter('sym','${t.sym}')">${t.sym}</td>
+      <td style="cursor:pointer" onclick="quickFilter('strat','${t.strat}')">${sn(t.strat)}</td>
+      <td style="cursor:pointer;color:${t.dir==='C'?'var(--green)':'var(--red)'}" onclick="quickFilter('dir','${t.dir}')">${t.dir==='C'?'Call':'Put'}</td>
+      <td class="right">${t.strike}</td>
+      <td class="right">${t.qty}</td>
+      <td class="right">$${t.entry.toFixed(2)}</td>
+      <td class="right" style="color:var(--cyan)">$${t.hwm.toFixed(2)}</td>
+      <td class="right">$${t.exit.toFixed(2)}</td>
+      <td class="right ${t.pnl>=0?'green':'red'}" style="font-weight:600">${fmt(Math.round(t.pnl))}</td>
+      <td class="right ${t.pnl_pct>=0?'green':'red'}">${fmtPct(t.pnl_pct)}</td>
+      <td class="right">${t.hold.toFixed(0)}m</td>
+      <td style="cursor:pointer" onclick="quickFilter('exit','${t.exit_type}')">${t.exit_type}</td>
+      <td class="right">$${t.cap.toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAll() {
+  renderPills();
+  renderHero();
+  renderScanStats();
+  renderSymChart();
+  renderSymCapChart();
+  renderStratChart();
+  renderHeatmap();
+  renderDirChart();
+  renderExitChart();
+  renderSignalTimeline();
+  renderActivityTimeline();
+  renderSpyChart();
+  renderTable();
+}
+
+// Initial render
+renderAll();
+</script>
+</body>
+</html>

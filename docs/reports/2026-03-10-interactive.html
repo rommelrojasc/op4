@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OP3 Interactive Report — March 10, 2026</title>
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b22; --bg3: #1c2333;
+  --border: #30363d; --text: #c9d1d9; --text2: #8b949e;
+  --green: #39d98a; --red: #ff6b6b; --blue: #58a6ff; --yellow: #d4a030;
+  --cyan: #56d4dd; --purple: #bc8cff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; padding:20px; }
+h1 { font-size:22px; font-weight:600; margin-bottom:4px; }
+.subtitle { color:var(--text2); font-size:12px; margin-bottom:16px; }
+
+/* Filters */
+.filters { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:16px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+.filter-group { display:flex; flex-direction:column; gap:3px; }
+.filter-group label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+.filter-group select, .filter-group input { background:var(--bg3); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:5px 8px; font-size:12px; font-family:inherit; min-width:100px; }
+.filter-group select:focus, .filter-group input:focus { outline:none; border-color:var(--blue); }
+.filter-group select { cursor:pointer; }
+.filter-group select[multiple] { min-height:60px; }
+.btn { background:var(--blue); color:#fff; border:none; border-radius:4px; padding:6px 14px; font-size:11px; font-weight:600; cursor:pointer; align-self:flex-end; }
+.btn:hover { opacity:0.9; }
+.btn-reset { background:var(--bg3); color:var(--text2); }
+.btn-reset:hover { color:var(--text); }
+.filter-pills { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px; }
+.pill { display:inline-flex; align-items:center; gap:4px; background:rgba(88,166,255,0.12); color:var(--blue); font-size:10px; font-weight:600; padding:3px 8px; border-radius:12px; }
+.pill .x { cursor:pointer; opacity:0.6; }
+.pill .x:hover { opacity:1; }
+
+/* Hero */
+.hero { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:16px; }
+.hero-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:12px; }
+.hero-card .label { font-size:9px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+.hero-card .value { font-size:20px; font-weight:700; }
+.hero-card .sub { font-size:10px; color:var(--text2); margin-top:2px; }
+.green { color:var(--green); }
+.red { color:var(--red); }
+
+/* Charts area */
+.charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.chart-card { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px; }
+.chart-card h3 { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+.bar-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.bar-label { width:70px; font-size:10px; color:var(--text); text-align:right; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track { flex:1; height:16px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:3px; min-width:2px; transition:width 0.3s; }
+.bar-value { width:75px; font-size:10px; font-family:'SF Mono',monospace; flex-shrink:0; }
+
+/* Table */
+.table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.table-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border); }
+.table-header h3 { font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+.table-header span { font-size:11px; color:var(--text2); }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th { text-align:left; font-weight:600; color:var(--text2); padding:7px 10px; border-bottom:1px solid var(--border); font-size:10px; text-transform:uppercase; cursor:pointer; user-select:none; white-space:nowrap; }
+th:hover { color:var(--blue); }
+th .sort-arrow { font-size:8px; margin-left:2px; }
+td { padding:5px 10px; border-bottom:1px solid rgba(48,54,61,0.3); font-family:'SF Mono',monospace; font-size:11px; }
+tr:hover td { background:rgba(88,166,255,0.04); }
+tr.winner td { border-left:2px solid var(--green); }
+tr.loser td { border-left:2px solid var(--red); }
+.right { text-align:right; }
+
+/* Hourly heatmap */
+.heatmap { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; }
+.heat-cell { border-radius:5px; padding:8px; text-align:center; cursor:pointer; transition:transform 0.15s; }
+.heat-cell:hover { transform:scale(1.03); }
+.heat-cell .hour { font-size:10px; color:var(--text2); }
+.heat-cell .pnl { font-size:15px; font-weight:700; margin:2px 0; }
+.heat-cell .detail { font-size:9px; color:var(--text2); }
+
+@media (max-width:768px) {
+  .hero { grid-template-columns:repeat(3,1fr); }
+  .charts { grid-template-columns:1fr; }
+  .heatmap { grid-template-columns:repeat(3,1fr); }
+  .filters { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<h1>Interactive Performance Report</h1>
+<div class="subtitle">Tuesday, March 10, 2026 &nbsp;|&nbsp; Paper Trading &nbsp;|&nbsp; Click any chart bar, heatmap cell, or column header to filter & sort</div>
+
+<!-- Filters -->
+<div class="filters" id="filters">
+  <div class="filter-group">
+    <label>Ticker</label>
+    <select id="f-sym" multiple size="4">
+      <option value="">All</option>
+      <option value="AMD">AMD</option><option value="AVGO">AVGO</option><option value="BABA">BABA</option><option value="C">C</option><option value="HD">HD</option><option value="IWM">IWM</option><option value="LOW">LOW</option><option value="MU">MU</option><option value="NVDA">NVDA</option><option value="PLTR">PLTR</option><option value="PYPL">PYPL</option><option value="QQQ">QQQ</option><option value="SPX">SPX</option><option value="SPY">SPY</option><option value="TNA">TNA</option><option value="WMT">WMT</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Strategy</label>
+    <select id="f-strat" multiple size="4">
+      <option value="">All</option>
+      <option value="strategy-1">S1 Mean Rev</option><option value="strategy10_0dte_trend">S10 Trend</option><option value="strategy11_ict_price_action">S11 ICT</option><option value="strategy4_magnet_effect_gap_far_from_ma20_15m">S4 Magnet</option><option value="strategy8_0dte_momentum">S8 Momentum</option><option value="strategy9_0dte_gap_fade">S9 Gap Fade</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Direction</label>
+    <select id="f-dir">
+      <option value="">All</option>
+      <option value="C">Calls</option>
+      <option value="P">Puts</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Exit Type</label>
+    <select id="f-exit">
+      <option value="">All</option>
+      <option value="Stop">Stop</option><option value="Time">Time</option><option value="Trail">Trail</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Result</label>
+    <select id="f-result">
+      <option value="">All</option>
+      <option value="win">Winners</option>
+      <option value="loss">Losers</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Entry After</label>
+    <input type="time" id="f-time-from" value="09:30">
+  </div>
+  <div class="filter-group">
+    <label>Entry Before</label>
+    <input type="time" id="f-time-to" value="16:00">
+  </div>
+  <div class="filter-group">
+    <label>Min P&L</label>
+    <input type="number" id="f-pnl-min" placeholder="-999" style="width:70px">
+  </div>
+  <div class="filter-group">
+    <label>Max P&L</label>
+    <input type="number" id="f-pnl-max" placeholder="999" style="width:70px">
+  </div>
+  <div class="filter-group" style="display:flex;flex-direction:row;gap:6px;align-self:flex-end;">
+    <button class="btn" onclick="applyFilters()">Apply</button>
+    <button class="btn btn-reset" onclick="resetFilters()">Reset</button>
+  </div>
+</div>
+
+<div class="filter-pills" id="active-pills"></div>
+
+<!-- Hero Cards -->
+<div class="hero" id="hero"></div>
+
+<!-- Charts -->
+<div class="charts">
+  <div class="chart-card">
+    <h3>P&L by Symbol</h3>
+    <div id="chart-sym"></div>
+  </div>
+  <div class="chart-card">
+    <h3>Capital Deployed by Symbol</h3>
+    <div id="chart-sym-cap"></div>
+  </div>
+</div>
+<div class="charts">
+  <div class="chart-card">
+    <h3>P&L by Strategy</h3>
+    <div id="chart-strat"></div>
+  </div>
+  <div class="chart-card">
+    <h3>Capital Deployed by Strategy</h3>
+    <div id="chart-strat-cap"></div>
+  </div>
+</div>
+
+<!-- Hourly Heatmap -->
+<div class="chart-card" style="margin-bottom:16px;">
+  <h3>Hourly Heatmap <span style="font-size:9px;color:var(--text2);font-weight:400;">(click to filter)</span></h3>
+  <div class="heatmap" id="heatmap"></div>
+</div>
+
+<!-- Direction & Exit breakdown -->
+<div class="charts">
+  <div class="chart-card">
+    <h3>Direction Breakdown</h3>
+    <div id="chart-dir"></div>
+  </div>
+  <div class="chart-card">
+    <h3>Exit Type Breakdown</h3>
+    <div id="chart-exit"></div>
+  </div>
+</div>
+
+<!-- Open Positions Banner -->
+<div id="open-pos-banner" class="chart-card" style="margin-bottom:16px;border-left:3px solid var(--yellow);"></div>
+
+<!-- Open Positions Table -->
+<div class="table-wrap" style="margin-bottom:16px;" id="open-pos-section">
+  <div class="table-header">
+    <h3 style="color:var(--yellow)">Open Positions (Still Held)</h3>
+    <span id="open-pos-count"></span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Entry</th>
+          <th>Symbol</th>
+          <th>Strategy</th>
+          <th>Dir</th>
+          <th class="right">Strike</th>
+          <th class="right">Qty</th>
+          <th class="right">Entry$</th>
+          <th class="right">HWM</th>
+          <th class="right">Capital</th>
+          <th>Expiration</th>
+          <th class="right">HWM vs Entry</th>
+          <th class="right">Delta</th>
+        </tr>
+      </thead>
+      <tbody id="open-pos-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Trade Table -->
+<div class="table-wrap">
+  <div class="table-header">
+    <h3>Trade Log</h3>
+    <span id="table-count"></span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table id="trade-table">
+      <thead>
+        <tr>
+          <th data-col="et" onclick="sortTable('et')">Entry <span class="sort-arrow"></span></th>
+          <th data-col="xt" onclick="sortTable('xt')">Exit <span class="sort-arrow"></span></th>
+          <th data-col="sym" onclick="sortTable('sym')">Symbol <span class="sort-arrow"></span></th>
+          <th data-col="strat" onclick="sortTable('strat')">Strategy <span class="sort-arrow"></span></th>
+          <th data-col="dir" onclick="sortTable('dir')">Dir <span class="sort-arrow"></span></th>
+          <th data-col="strike" onclick="sortTable('strike')" class="right">Strike <span class="sort-arrow"></span></th>
+          <th data-col="qty" onclick="sortTable('qty')" class="right">Qty <span class="sort-arrow"></span></th>
+          <th data-col="entry" onclick="sortTable('entry')" class="right">Entry$ <span class="sort-arrow"></span></th>
+          <th data-col="hwm" onclick="sortTable('hwm')" class="right">HWM <span class="sort-arrow"></span></th>
+          <th data-col="exit" onclick="sortTable('exit')" class="right">Exit$ <span class="sort-arrow"></span></th>
+          <th data-col="pnl" onclick="sortTable('pnl')" class="right">P&L <span class="sort-arrow"></span></th>
+          <th data-col="pnl_pct" onclick="sortTable('pnl_pct')" class="right">Return <span class="sort-arrow"></span></th>
+          <th data-col="hold" onclick="sortTable('hold')" class="right">Hold <span class="sort-arrow"></span></th>
+          <th data-col="exit_type" onclick="sortTable('exit_type')">Exit Type <span class="sort-arrow"></span></th>
+          <th data-col="cap" onclick="sortTable('cap')" class="right">Capital <span class="sort-arrow"></span></th>
+        </tr>
+      </thead>
+      <tbody id="trade-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div style="margin-top:30px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text2);text-align:center;">
+  OP3 Trading Platform &nbsp;|&nbsp; March 10, 2026 &nbsp;|&nbsp; Paper Mode &nbsp;|&nbsp; Interactive Report
+</div>
+
+<script>
+const ALL_TRADES = [{"sym":"PLTR","strat":"strategy-1","dir":"P","strike":147.0,"qty":5,"entry":1.94,"exit":1.96,"hwm":2.14,"pnl":10,"pnl_pct":1.0,"et":"03/09 10:35","xt":"12:06","ets":1773066900,"hold":1532.0,"exit_type":"Trail","delta":-0.256,"cap":970},{"sym":"LOW","strat":"strategy4_magnet_effect_gap_far_from_ma20_15m","dir":"C","strike":247.5,"qty":2,"entry":4.75,"exit":5.25,"hwm":6.3,"pnl":100,"pnl_pct":10.5,"et":"03/09 15:23","xt":"12:21","ets":1773084233,"hold":1257.4,"exit_type":"Trail","delta":0.567,"cap":950},{"sym":"TNA","strat":"strategy4_magnet_effect_gap_far_from_ma20_15m","dir":"C","strike":45.5,"qty":2,"entry":3.5,"exit":4.05,"hwm":4.45,"pnl":110,"pnl_pct":15.7,"et":"03/09 15:27","xt":"12:06","ets":1773084454,"hold":1239.1,"exit_type":"Trail","delta":0.0,"cap":700},{"sym":"AMD","strat":"strategy4_magnet_effect_gap_far_from_ma20_15m","dir":"C","strike":202.5,"qty":1,"entry":5.1,"exit":5.95,"hwm":6.4,"pnl":85,"pnl_pct":16.7,"et":"03/09 15:40","xt":"09:53","ets":1773085236,"hold":1093.0,"exit_type":"Trail","delta":0.525,"cap":510},{"sym":"MU","strat":"strategy-1","dir":"C","strike":387.5,"qty":1,"entry":14.0,"exit":24.15,"hwm":26.0,"pnl":1015,"pnl_pct":72.5,"et":"03/09 15:42","xt":"09:55","ets":1773085373,"hold":1092.2,"exit_type":"Trail","delta":0.525,"cap":1400},{"sym":"WMT","strat":"strategy-1","dir":"C","strike":124.0,"qty":5,"entry":1.81,"exit":1.83,"hwm":2.03,"pnl":10,"pnl_pct":1.1,"et":"03/09 15:48","xt":"09:58","ets":1773085684,"hold":1090.8,"exit_type":"Trail","delta":0.508,"cap":905},{"sym":"C","strat":"strategy-1","dir":"C","strike":107.0,"qty":5,"entry":1.92,"exit":2.77,"hwm":3.0,"pnl":425,"pnl_pct":44.3,"et":"03/09 15:51","xt":"09:51","ets":1773085916,"hold":1079.2,"exit_type":"Trail","delta":0.486,"cap":960},{"sym":"BABA","strat":"strategy-1","dir":"C","strike":132.0,"qty":3,"entry":3.25,"exit":4.4,"hwm":4.65,"pnl":345,"pnl_pct":35.4,"et":"03/09 15:55","xt":"09:57","ets":1773086156,"hold":1081.8,"exit_type":"Trail","delta":0.0,"cap":975},{"sym":"SPX","strat":"strategy10_0dte_trend","dir":"C","strike":6825.0,"qty":6,"entry":7.6,"exit":8.2,"hwm":10.4,"pnl":360,"pnl_pct":7.9,"et":"12:06","xt":"12:12","ets":1773158811,"hold":6.0,"exit_type":"Trail","delta":0.0,"cap":4560},{"sym":"SPY","strat":"strategy8_0dte_momentum","dir":"C","strike":681.0,"qty":50,"entry":0.99,"exit":1.02,"hwm":1.25,"pnl":150,"pnl_pct":3.0,"et":"12:06","xt":"12:12","ets":1773158817,"hold":5.9,"exit_type":"Trail","delta":0.0,"cap":4950},{"sym":"QQQ","strat":"strategy10_0dte_trend","dir":"C","strike":610.0,"qty":31,"entry":1.59,"exit":1.8,"hwm":2.33,"pnl":651,"pnl_pct":13.2,"et":"12:07","xt":"12:21","ets":1773158837,"hold":14.6,"exit_type":"Trail","delta":0.516,"cap":4929},{"sym":"IWM","strat":"strategy8_0dte_momentum","dir":"C","strike":256.0,"qty":81,"entry":0.61,"exit":0.63,"hwm":0.78,"pnl":162,"pnl_pct":3.3,"et":"12:07","xt":"12:12","ets":1773158847,"hold":5.4,"exit_type":"Trail","delta":0.0,"cap":4941},{"sym":"NVDA","strat":"strategy11_ict_price_action","dir":"C","strike":185.0,"qty":26,"entry":1.89,"exit":1.4,"hwm":2.43,"pnl":-1274,"pnl_pct":-25.9,"et":"12:08","xt":"15:30","ets":1773158922,"hold":202.0,"exit_type":"Time","delta":0.516,"cap":4914},{"sym":"AVGO","strat":"strategy4_magnet_effect_gap_far_from_ma20_15m","dir":"P","strike":322.5,"qty":38,"entry":1.3,"exit":1.44,"hwm":1.56,"pnl":532,"pnl_pct":10.8,"et":"12:09","xt":"14:23","ets":1773158998,"hold":133.7,"exit_type":"Trail","delta":-0.12,"cap":4940},{"sym":"HD","strat":"strategy-1","dir":"C","strike":362.5,"qty":24,"entry":2.08,"exit":2.23,"hwm":2.5,"pnl":360,"pnl_pct":7.2,"et":"12:11","xt":"13:35","ets":1773159081,"hold":84.5,"exit_type":"Trail","delta":0.287,"cap":4992},{"sym":"SPX","strat":"strategy11_ict_price_action","dir":"C","strike":6825.0,"qty":6,"entry":7.9,"exit":10.0,"hwm":11.9,"pnl":1260,"pnl_pct":26.6,"et":"12:14","xt":"12:20","ets":1773159250,"hold":6.1,"exit_type":"Trail","delta":0.0,"cap":4740},{"sym":"SPY","strat":"strategy10_0dte_trend","dir":"C","strike":681.0,"qty":48,"entry":1.03,"exit":1.22,"hwm":1.42,"pnl":912,"pnl_pct":18.4,"et":"12:14","xt":"12:20","ets":1773159271,"hold":6.5,"exit_type":"Trail","delta":0.0,"cap":4944},{"sym":"IWM","strat":"strategy10_0dte_trend","dir":"C","strike":256.0,"qty":78,"entry":0.64,"exit":0.74,"hwm":0.89,"pnl":780,"pnl_pct":15.6,"et":"12:14","xt":"12:20","ets":1773159293,"hold":6.1,"exit_type":"Trail","delta":0.0,"cap":4992},{"sym":"SPX","strat":"strategy11_ict_price_action","dir":"C","strike":6815.0,"qty":3,"entry":15.6,"exit":19.5,"hwm":23.0,"pnl":1170,"pnl_pct":25.0,"et":"12:20","xt":"13:13","ets":1773159659,"hold":52.5,"exit_type":"Trail","delta":0.0,"cap":4680},{"sym":"SPY","strat":"strategy11_ict_price_action","dir":"C","strike":680.0,"qty":27,"entry":1.8,"exit":2.45,"hwm":2.73,"pnl":1755,"pnl_pct":36.1,"et":"12:21","xt":"13:09","ets":1773159672,"hold":48.3,"exit_type":"Trail","delta":0.0,"cap":4860},{"sym":"IWM","strat":"strategy8_0dte_momentum","dir":"P","strike":247.0,"qty":100,"entry":0.01,"exit":0.02,"hwm":0.04,"pnl":100,"pnl_pct":100.0,"et":"12:21","xt":"14:15","ets":1773159677,"hold":114.2,"exit_type":"Trail","delta":0.0,"cap":100},{"sym":"QQQ","strat":"strategy11_ict_price_action","dir":"C","strike":611.0,"qty":35,"entry":1.42,"exit":1.84,"hwm":2.03,"pnl":1470,"pnl_pct":29.6,"et":"12:23","xt":"13:08","ets":1773159820,"hold":45.1,"exit_type":"Trail","delta":0.518,"cap":4970},{"sym":"QQQ","strat":"strategy11_ict_price_action","dir":"C","strike":612.0,"qty":41,"entry":1.21,"exit":1.7,"hwm":1.91,"pnl":2022,"pnl_pct":40.8,"et":"13:09","xt":"13:30","ets":1773162564,"hold":21.2,"exit_type":"Trail","delta":0.513,"cap":4961},{"sym":"SPY","strat":"strategy11_ict_price_action","dir":"C","strike":682.0,"qty":42,"entry":1.17,"exit":1.77,"hwm":1.93,"pnl":2520,"pnl_pct":51.3,"et":"13:10","xt":"13:30","ets":1773162622,"hold":20.2,"exit_type":"Trail","delta":0.0,"cap":4914},{"sym":"SPX","strat":"strategy11_ict_price_action","dir":"C","strike":6825.0,"qty":3,"entry":12.8,"exit":15.9,"hwm":20.1,"pnl":930,"pnl_pct":24.2,"et":"13:14","xt":"13:34","ets":1773162862,"hold":20.2,"exit_type":"Trail","delta":0.0,"cap":3840},{"sym":"SPY","strat":"strategy11_ict_price_action","dir":"C","strike":682.0,"qty":29,"entry":1.7,"exit":0.82,"hwm":1.59,"pnl":-2552,"pnl_pct":-51.8,"et":"13:31","xt":"13:37","ets":1773163889,"hold":6.1,"exit_type":"Stop","delta":0.0,"cap":4930},{"sym":"QQQ","strat":"strategy8_0dte_momentum","dir":"C","strike":613.0,"qty":55,"entry":0.9,"exit":0.45,"hwm":1.0,"pnl":-2475,"pnl_pct":-50.0,"et":"13:31","xt":"13:37","ets":1773163919,"hold":5.6,"exit_type":"Stop","delta":0.444,"cap":4950},{"sym":"SPX","strat":"strategy11_ict_price_action","dir":"C","strike":6835.0,"qty":6,"entry":8.3,"exit":0.05,"hwm":9.8,"pnl":-4950,"pnl_pct":-99.4,"et":"13:36","xt":"15:30","ets":1773164174,"hold":114.2,"exit_type":"Time","delta":0.0,"cap":4980},{"sym":"SPY","strat":"strategy11_ict_price_action","dir":"C","strike":683.0,"qty":100,"entry":0.41,"exit":0.49,"hwm":0.58,"pnl":800,"pnl_pct":19.5,"et":"13:39","xt":"13:42","ets":1773164360,"hold":3.6,"exit_type":"Trail","delta":0.0,"cap":4100},{"sym":"QQQ","strat":"strategy11_ict_price_action","dir":"C","strike":612.0,"qty":39,"entry":1.27,"exit":0.02,"hwm":1.2,"pnl":-4875,"pnl_pct":-98.4,"et":"13:56","xt":"15:30","ets":1773165395,"hold":93.8,"exit_type":"Time","delta":0.527,"cap":4953},{"sym":"NVDA","strat":"strategy11_ict_price_action","dir":"C","strike":185.0,"qty":35,"entry":1.42,"exit":1.43,"hwm":1.45,"pnl":35,"pnl_pct":0.7,"et":"15:31","xt":"15:31","ets":1773171102,"hold":0.2,"exit_type":"Time","delta":0.431,"cap":4970},{"sym":"NVDA","strat":"strategy11_ict_price_action","dir":"C","strike":185.0,"qty":34,"entry":1.45,"exit":1.36,"hwm":1.41,"pnl":-306,"pnl_pct":-6.2,"et":"15:34","xt":"15:35","ets":1773171276,"hold":0.6,"exit_type":"Time","delta":0.453,"cap":4930}];
+const STRAT_NAMES = {"strategy-1":"S1 Mean Rev","strategy11_ict_price_action":"S11 ICT","strategy10_0dte_trend":"S10 Trend","strategy8_0dte_momentum":"S8 Momentum","strategy4_magnet_effect_gap_far_from_ma20_15m":"S4 Magnet","strategy9_0dte_gap_fade":"S9 Gap Fade"};
+const STRAT_COLORS = {
+  'strategy11_ict_price_action':'#29b6f6','strategy-1':'#42a5f5',
+  'strategy10_0dte_trend':'#7e57c2','strategy8_0dte_momentum':'#78909c',
+  'strategy4_magnet_effect_gap_far_from_ma20_15m':'#ef5350','strategy9_0dte_gap_fade':'#d4e157'
+};
+const SYM_COLORS = ['#42a5f5','#66bb6a','#ab47bc','#ef5350','#ffa726','#26c6da','#ec407a','#8d6e63','#78909c','#d4e157','#7e57c2','#29b6f6','#ff7043','#26a69a','#5c6bc0'];
+const OPEN_POSITIONS = [{"sym":"PLTR","strat":"strategy-1","dir":"P","strike":150.0,"qty":15,"entry":3.2,"hwm":3.1,"cap":4800,"et":"12:08","exp":"2026-03-13","est_pnl_pct":-3.1,"delta":-0.46},{"sym":"LOW","strat":"strategy-1","dir":"C","strike":257.5,"qty":43,"entry":1.16,"hwm":1.27,"cap":4988,"et":"12:22","exp":"2026-03-13","est_pnl_pct":9.5,"delta":0.256},{"sym":"PYPL","strat":"strategy4_magnet_effect_gap_far_from_ma20_15m","dir":"C","strike":46.5,"qty":98,"entry":0.51,"hwm":0.42,"cap":4998,"et":"13:59","exp":"2026-03-13","est_pnl_pct":-17.6,"delta":0.333}];
+
+let filtered = [...ALL_TRADES];
+let sortCol = 'ets';
+let sortAsc = true;
+
+function fmt(n) { return n >= 0 ? '+$' + n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}) : '-$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function fmtPct(n) { return (n >= 0 ? '+' : '') + n.toFixed(1) + '%'; }
+function sn(s) { return STRAT_NAMES[s] || s.replace(/strategy/,'S').replace(/_/g,' ').substring(0,15); }
+
+function getFilters() {
+  const symSel = document.getElementById('f-sym');
+  const stratSel = document.getElementById('f-strat');
+  const syms = [...symSel.selectedOptions].map(o=>o.value).filter(v=>v);
+  const strats = [...stratSel.selectedOptions].map(o=>o.value).filter(v=>v);
+  // Map strat display names back to IDs
+  const stratIds = strats.map(name => {
+    for (const [id, n] of Object.entries(STRAT_NAMES)) if (n === name) return id;
+    return name;
+  });
+  return {
+    syms, stratIds,
+    dir: document.getElementById('f-dir').value,
+    exitType: document.getElementById('f-exit').value,
+    result: document.getElementById('f-result').value,
+    timeFrom: document.getElementById('f-time-from').value || '09:30',
+    timeTo: document.getElementById('f-time-to').value || '16:00',
+    pnlMin: document.getElementById('f-pnl-min').value,
+    pnlMax: document.getElementById('f-pnl-max').value,
+  };
+}
+
+function applyFilters() {
+  const f = getFilters();
+  filtered = ALL_TRADES.filter(t => {
+    if (f.syms.length && !f.syms.includes(t.sym)) return false;
+    if (f.stratIds.length && !f.stratIds.includes(t.strat)) return false;
+    if (f.dir && t.dir !== f.dir) return false;
+    if (f.exitType && t.exit_type !== f.exitType) return false;
+    if (f.result === 'win' && t.pnl < 0) return false;
+    if (f.result === 'loss' && t.pnl >= 0) return false;
+    const etTime = t.et.length > 5 ? t.et.slice(-5) : t.et;
+    if (etTime < f.timeFrom || etTime > f.timeTo) return false;
+    if (f.pnlMin && t.pnl < Number(f.pnlMin)) return false;
+    if (f.pnlMax && t.pnl > Number(f.pnlMax)) return false;
+    return true;
+  });
+  renderAll();
+}
+
+function resetFilters() {
+  document.getElementById('f-sym').selectedIndex = 0;
+  document.getElementById('f-strat').selectedIndex = 0;
+  document.getElementById('f-dir').value = '';
+  document.getElementById('f-exit').value = '';
+  document.getElementById('f-result').value = '';
+  document.getElementById('f-time-from').value = '09:30';
+  document.getElementById('f-time-to').value = '16:00';
+  document.getElementById('f-pnl-min').value = '';
+  document.getElementById('f-pnl-max').value = '';
+  filtered = [...ALL_TRADES];
+  renderAll();
+}
+
+function quickFilter(key, val) {
+  resetFilters();
+  if (key === 'sym') {
+    const sel = document.getElementById('f-sym');
+    [...sel.options].forEach(o => o.selected = o.value === val);
+  } else if (key === 'strat') {
+    const sel = document.getElementById('f-strat');
+    const name = STRAT_NAMES[val] || val;
+    [...sel.options].forEach(o => o.selected = o.value === name);
+  } else if (key === 'dir') {
+    document.getElementById('f-dir').value = val;
+  } else if (key === 'exit') {
+    document.getElementById('f-exit').value = val;
+  } else if (key === 'hour') {
+    document.getElementById('f-time-from').value = val + ':00';
+    const nextH = String(Number(val)+1).padStart(2,'0');
+    document.getElementById('f-time-to').value = nextH + ':00';
+  }
+  applyFilters();
+}
+
+function renderPills() {
+  const f = getFilters();
+  const pills = [];
+  f.syms.forEach(s => pills.push({label:'Ticker: '+s,key:'sym'}));
+  f.stratIds.forEach(s => pills.push({label:'Strategy: '+sn(s),key:'strat'}));
+  if (f.dir) pills.push({label:'Dir: '+(f.dir==='C'?'Calls':'Puts'),key:'dir'});
+  if (f.exitType) pills.push({label:'Exit: '+f.exitType,key:'exit'});
+  if (f.result) pills.push({label:f.result==='win'?'Winners':'Losers',key:'result'});
+  if (f.timeFrom !== '09:30' || f.timeTo !== '16:00') pills.push({label:f.timeFrom+' - '+f.timeTo,key:'time'});
+  document.getElementById('active-pills').innerHTML = pills.map(p =>
+    `<span class="pill">${p.label} <span class="x" onclick="resetFilters()">&times;</span></span>`
+  ).join('');
+}
+
+function renderHero() {
+  const t = filtered;
+  const pnl = t.reduce((s,x)=>s+x.pnl,0);
+  const wins = t.filter(x=>x.pnl>=0).length;
+  const losses = t.filter(x=>x.pnl<0).length;
+  const wr = t.length ? (wins/t.length*100).toFixed(1) : '0';
+  const cap = t.reduce((s,x)=>s+x.cap,0);
+  const roi = cap ? (pnl/cap*100).toFixed(1) : '0';
+  const best = t.length ? Math.max(...t.map(x=>x.pnl)) : 0;
+  const worst = t.length ? Math.min(...t.map(x=>x.pnl)) : 0;
+  const avgHold = t.length ? (t.reduce((s,x)=>s+x.hold,0)/t.length).toFixed(0) : 0;
+  const winPnl = t.filter(x=>x.pnl>=0).reduce((s,x)=>s+x.pnl,0);
+  const lossPnl = Math.abs(t.filter(x=>x.pnl<0).reduce((s,x)=>s+x.pnl,0));
+  const pf = lossPnl ? (winPnl/lossPnl).toFixed(2) : '∞';
+
+  const openCap = OPEN_POSITIONS.reduce((s,p)=>s+p.cap,0);
+  const totalCap = cap + openCap;
+  document.getElementById('hero').innerHTML = `
+    <div class="hero-card"><div class="label">P&L</div><div class="value ${pnl>=0?'green':'red'}">${fmt(pnl)}</div><div class="sub">${roi}% ROI</div></div>
+    <div class="hero-card"><div class="label">Capital Deployed</div><div class="value" style="color:var(--purple)">$${totalCap.toLocaleString()}</div><div class="sub">closed: $${cap.toLocaleString()} · open: $${openCap.toLocaleString()}</div></div>
+    <div class="hero-card"><div class="label">Trades</div><div class="value" style="color:var(--blue)">${t.length}</div><div class="sub">${wins}W / ${losses}L + ${OPEN_POSITIONS.length} open</div></div>
+    <div class="hero-card"><div class="label">Win Rate</div><div class="value" style="color:${Number(wr)>=50?'var(--green)':'var(--yellow)'}">${wr}%</div><div class="sub">PF: ${pf}x</div></div>
+    <div class="hero-card"><div class="label">Best</div><div class="value green">${fmt(best)}</div></div>
+    <div class="hero-card"><div class="label">Worst</div><div class="value red">${fmt(worst)}</div></div>
+    <div class="hero-card"><div class="label">Avg Hold</div><div class="value" style="color:var(--cyan)">${avgHold}m</div></div>
+  `;
+}
+
+function renderBarChart(containerId, data, colorFn, clickKey) {
+  // data: [{label, value, count, extra}] sorted by value desc
+  const maxAbs = Math.max(...data.map(d=>Math.abs(d.value)),1);
+  const container = document.getElementById(containerId);
+  container.innerHTML = data.slice(0,12).map(d => {
+    const pct = (Math.abs(d.value)/maxAbs*100).toFixed(1);
+    const color = colorFn(d);
+    const cls = d.value >= 0 ? 'green' : 'red';
+    return `<div class="bar-row" style="cursor:pointer" onclick="quickFilter('${clickKey}','${d.id}')">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};opacity:${d.value>=0?1:0.7}"></div></div>
+      <span class="bar-value ${cls}">${fmt(d.value)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderSymChart() {
+  const byS = {};
+  filtered.forEach(t => {
+    if (!byS[t.sym]) byS[t.sym] = {pnl:0,count:0,cap:0};
+    byS[t.sym].pnl += t.pnl;
+    byS[t.sym].count++;
+    byS[t.sym].cap += t.cap;
+  });
+  const data = Object.entries(byS).map(([s,d],i) => ({id:s,label:s,value:Math.round(d.pnl),count:d.count,cap:d.cap})).sort((a,b)=>b.value-a.value);
+  renderBarChart('chart-sym', data, (d,i)=> d.value>=0?'var(--green)':'var(--red)', 'sym');
+}
+
+function renderSymCapChart() {
+  const byS = {};
+  filtered.forEach(t => {
+    if (!byS[t.sym]) byS[t.sym] = {pnl:0,cap:0,count:0};
+    byS[t.sym].pnl += t.pnl;
+    byS[t.sym].cap += t.cap;
+    byS[t.sym].count++;
+  });
+  const data = Object.entries(byS).map(([s,d]) => ({id:s,label:s,cap:Math.round(d.cap),pnl:Math.round(d.pnl),count:d.count,roi:d.cap?(d.pnl/d.cap*100).toFixed(0):0})).sort((a,b)=>b.cap-a.cap);
+  const maxCap = Math.max(...data.map(d=>d.cap),1);
+  document.getElementById('chart-sym-cap').innerHTML = data.slice(0,12).map(d => {
+    const pct = (d.cap/maxCap*100).toFixed(1);
+    return `<div class="bar-row" style="cursor:pointer" onclick="quickFilter('sym','${d.id}')">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--purple);"></div></div>
+      <span class="bar-value" style="color:var(--purple)">$${d.cap.toLocaleString()}</span>
+    </div>
+    <div style="font-size:9px;color:var(--text2);margin:-2px 0 4px 78px">${d.count}t · P&L: <span class="${d.pnl>=0?'green':'red'}">${fmt(d.pnl)}</span> · ROI: <span class="${Number(d.roi)>=0?'green':'red'}">${d.roi}%</span></div>`;
+  }).join('');
+}
+
+function renderStratChart() {
+  const byS = {};
+  filtered.forEach(t => {
+    if (!byS[t.strat]) byS[t.strat] = {pnl:0,count:0,cap:0};
+    byS[t.strat].pnl += t.pnl;
+    byS[t.strat].count++;
+    byS[t.strat].cap += t.cap;
+  });
+  const data = Object.entries(byS).map(([s,d]) => ({id:s,label:sn(s),value:Math.round(d.pnl),count:d.count,cap:d.cap})).sort((a,b)=>b.value-a.value);
+  renderBarChart('chart-strat', data, d=> STRAT_COLORS[d.id]||'#888', 'strat');
+
+  // Strategy capital chart
+  const maxCap = Math.max(...data.map(d=>d.cap),1);
+  document.getElementById('chart-strat-cap').innerHTML = data.sort((a,b)=>b.cap-a.cap).map(d => {
+    const pct = (d.cap/maxCap*100).toFixed(1);
+    const roi = d.cap ? (d.value/d.cap*100).toFixed(0) : 0;
+    return `<div class="bar-row" style="cursor:pointer" onclick="quickFilter('strat','${d.id}')">
+      <span class="bar-label">${d.label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${STRAT_COLORS[d.id]||'#888'};opacity:0.7"></div></div>
+      <span class="bar-value" style="color:var(--purple)">$${Math.round(d.cap).toLocaleString()}</span>
+    </div>
+    <div style="font-size:9px;color:var(--text2);margin:-2px 0 4px 78px">${d.count}t · ROI: <span class="${Number(roi)>=0?'green':'red'}">${roi}%</span></div>`;
+  }).join('');
+}
+
+function renderHeatmap() {
+  const byH = {};
+  filtered.forEach(t => {
+    const etTime = t.et.length > 5 ? t.et.slice(-5) : t.et;
+    const h = etTime.substring(0,2);
+    if (!byH[h]) byH[h] = {pnl:0,count:0,wins:0,cap:0};
+    byH[h].pnl += t.pnl;
+    byH[h].count++;
+    byH[h].cap += t.cap;
+    if (t.pnl >= 0) byH[h].wins++;
+  });
+  const hours = Object.keys(byH).sort();
+  document.getElementById('heatmap').innerHTML = hours.map(h => {
+    const d = byH[h];
+    const isPos = d.pnl >= 0;
+    const intensity = Math.min(Math.abs(d.pnl) / 10000, 0.4);
+    const c = isPos ? '57,217,138' : '255,107,107';
+    const roi = d.cap ? (d.pnl/d.cap*100).toFixed(0) : 0;
+    return `<div class="heat-cell" style="background:rgba(${c},${(intensity*0.6+0.05).toFixed(2)});border:1px solid rgba(${c},${(intensity+0.15).toFixed(2)})" onclick="quickFilter('hour','${h}')">
+      <div class="hour">${h}:00</div>
+      <div class="pnl ${isPos?'green':'red'}">${fmt(Math.round(d.pnl))}</div>
+      <div class="detail">${d.count}t · ${d.wins}W/${d.count-d.wins}L</div>
+      <div class="detail" style="color:var(--purple)">$${Math.round(d.cap).toLocaleString()} · ${roi}% ROI</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDirChart() {
+  const calls = filtered.filter(t=>t.dir==='C');
+  const puts = filtered.filter(t=>t.dir==='P');
+  const cPnl = calls.reduce((s,t)=>s+t.pnl,0);
+  const pPnl = puts.reduce((s,t)=>s+t.pnl,0);
+  const cCap = calls.reduce((s,t)=>s+t.cap,0);
+  const pCap = puts.reduce((s,t)=>s+t.cap,0);
+  const cW = calls.filter(t=>t.pnl>=0).length;
+  const pW = puts.filter(t=>t.pnl>=0).length;
+  const cRoi = cCap ? (cPnl/cCap*100).toFixed(0) : 0;
+  const pRoi = pCap ? (pPnl/pCap*100).toFixed(0) : 0;
+  const maxAbs = Math.max(Math.abs(cPnl),Math.abs(pPnl),1);
+  document.getElementById('chart-dir').innerHTML = `
+    <div class="bar-row" style="cursor:pointer" onclick="quickFilter('dir','C')">
+      <span class="bar-label">Calls (${calls.length})</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(Math.abs(cPnl)/maxAbs*100).toFixed(0)}%;background:${cPnl>=0?'var(--green)':'var(--red)'};"></div></div>
+      <span class="bar-value ${cPnl>=0?'green':'red'}">${fmt(Math.round(cPnl))}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:0 0 8px 78px">${cW}W / ${calls.length-cW}L (${calls.length?(cW/calls.length*100).toFixed(0):0}%) · <span style="color:var(--purple)">$${Math.round(cCap).toLocaleString()}</span> deployed · ${cRoi}% ROI</div>
+    <div class="bar-row" style="cursor:pointer" onclick="quickFilter('dir','P')">
+      <span class="bar-label">Puts (${puts.length})</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(Math.abs(pPnl)/maxAbs*100).toFixed(0)}%;background:${pPnl>=0?'var(--green)':'var(--red)'};"></div></div>
+      <span class="bar-value ${pPnl>=0?'green':'red'}">${fmt(Math.round(pPnl))}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:0 0 0 78px">${pW}W / ${puts.length-pW}L (${puts.length?(pW/puts.length*100).toFixed(0):0}%) · <span style="color:var(--purple)">$${Math.round(pCap).toLocaleString()}</span> deployed · ${pRoi}% ROI</div>
+  `;
+}
+
+function renderExitChart() {
+  const byE = {};
+  filtered.forEach(t => {
+    if (!byE[t.exit_type]) byE[t.exit_type] = {pnl:0,count:0,wins:0,cap:0};
+    byE[t.exit_type].pnl += t.pnl;
+    byE[t.exit_type].count++;
+    byE[t.exit_type].cap += t.cap;
+    if (t.pnl >= 0) byE[t.exit_type].wins++;
+  });
+  const colors = {Trail:'var(--green)',Stop:'var(--red)',Time:'var(--cyan)',MaxHold:'var(--yellow)',Other:'var(--text2)'};
+  const data = Object.entries(byE).sort((a,b)=>b[1].pnl-a[1].pnl);
+  const maxAbs = Math.max(...data.map(([,d])=>Math.abs(d.pnl)),1);
+  document.getElementById('chart-exit').innerHTML = data.map(([type,d]) => {
+    const roi = d.cap ? (d.pnl/d.cap*100).toFixed(0) : 0;
+    return `
+    <div class="bar-row" style="cursor:pointer" onclick="quickFilter('exit','${type}')">
+      <span class="bar-label">${type} (${d.count})</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(Math.abs(d.pnl)/maxAbs*100).toFixed(0)}%;background:${colors[type]||'#888'};opacity:${d.pnl>=0?1:0.7}"></div></div>
+      <span class="bar-value ${d.pnl>=0?'green':'red'}">${fmt(Math.round(d.pnl))}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin:0 0 6px 78px">${d.wins}W / ${d.count-d.wins}L · <span style="color:var(--purple)">$${Math.round(d.cap).toLocaleString()}</span> · ${roi}% ROI</div>`;
+  }).join('');
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = col === 'pnl' ? false : true; }
+  renderTable();
+}
+
+function renderTable() {
+  const sorted = [...filtered].sort((a,b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sortAsc ? va - vb : vb - va;
+  });
+
+  // Update sort arrows
+  document.querySelectorAll('th .sort-arrow').forEach(el => el.textContent = '');
+  const activeCol = document.querySelector(`th[data-col="${sortCol}"] .sort-arrow`);
+  if (activeCol) activeCol.textContent = sortAsc ? ' \u25B2' : ' \u25BC';
+
+  document.getElementById('table-count').textContent = `${sorted.length} trades`;
+  document.getElementById('trade-tbody').innerHTML = sorted.map(t => `
+    <tr class="${t.pnl>=0?'winner':'loser'}">
+      <td>${t.et}</td>
+      <td>${t.xt}</td>
+      <td style="cursor:pointer;color:var(--blue)" onclick="quickFilter('sym','${t.sym}')">${t.sym}</td>
+      <td style="cursor:pointer" onclick="quickFilter('strat','${t.strat}')">${sn(t.strat)}</td>
+      <td style="cursor:pointer;color:${t.dir==='C'?'var(--green)':'var(--red)'}" onclick="quickFilter('dir','${t.dir}')">${t.dir==='C'?'Call':'Put'}</td>
+      <td class="right">${t.strike}</td>
+      <td class="right">${t.qty}</td>
+      <td class="right">$${t.entry.toFixed(2)}</td>
+      <td class="right" style="color:var(--cyan)">$${t.hwm.toFixed(2)}</td>
+      <td class="right">$${t.exit.toFixed(2)}</td>
+      <td class="right ${t.pnl>=0?'green':'red'}" style="font-weight:600">${fmt(Math.round(t.pnl))}</td>
+      <td class="right ${t.pnl_pct>=0?'green':'red'}">${fmtPct(t.pnl_pct)}</td>
+      <td class="right">${t.hold.toFixed(0)}m</td>
+      <td style="cursor:pointer" onclick="quickFilter('exit','${t.exit_type}')">${t.exit_type}</td>
+      <td class="right">$${t.cap.toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+function renderOpenPosBanner() {
+  const ops = OPEN_POSITIONS;
+  if (!ops.length) { document.getElementById('open-pos-banner').style.display='none'; document.getElementById('open-pos-section').style.display='none'; return; }
+  const totalCap = ops.reduce((s,p)=>s+p.cap,0);
+  const byStrat = {};
+  ops.forEach(p => {
+    if (!byStrat[p.strat]) byStrat[p.strat] = {count:0,cap:0};
+    byStrat[p.strat].count++;
+    byStrat[p.strat].cap += p.cap;
+  });
+  const stratBreak = Object.entries(byStrat).map(([s,d]) =>
+    `<span style="color:${STRAT_COLORS[s]||'#888'};font-weight:600">${sn(s)}</span>: ${d.count}pos · $${d.cap.toLocaleString()}`
+  ).join(' &nbsp;|&nbsp; ');
+  const upCount = ops.filter(p=>p.est_pnl_pct>=0).length;
+  const downCount = ops.filter(p=>p.est_pnl_pct<0).length;
+  const avgPnlPct = (ops.reduce((s,p)=>s+p.est_pnl_pct,0)/ops.length).toFixed(1);
+  document.getElementById('open-pos-banner').innerHTML = `
+    <h3 style="font-size:11px;color:var(--yellow);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">⚠ Open Positions — Capital at Risk</h3>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+      <div><span style="font-size:22px;font-weight:700;color:var(--yellow)">${ops.length}</span> <span style="color:var(--text2);font-size:12px">positions</span></div>
+      <div><span style="font-size:22px;font-weight:700;color:var(--purple)">$${totalCap.toLocaleString()}</span> <span style="color:var(--text2);font-size:12px">capital at risk</span></div>
+      <div><span style="font-size:14px;font-weight:600;color:var(--green)">${upCount}↑</span> <span style="font-size:14px;font-weight:600;color:var(--red)">${downCount}↓</span> <span style="color:var(--text2);font-size:12px">vs entry</span></div>
+      <div><span style="font-size:14px;font-weight:600;color:${Number(avgPnlPct)>=0?'var(--green)':'var(--red)'}">Avg: ${avgPnlPct}%</span> <span style="color:var(--text2);font-size:12px">HWM vs entry</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2)">${stratBreak}</div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px">All expire: ${ops[0].exp}</div>
+  `;
+}
+
+function renderOpenPositions() {
+  const ops = OPEN_POSITIONS;
+  if (!ops.length) return;
+  document.getElementById('open-pos-count').textContent = ops.length + ' positions · $' + ops.reduce((s,p)=>s+p.cap,0).toLocaleString() + ' capital';
+  document.getElementById('open-pos-tbody').innerHTML = ops.map(p => {
+    const hwmPct = ((p.hwm - p.entry) / p.entry * 100).toFixed(1);
+    const hwmCls = Number(hwmPct) >= 0 ? 'green' : 'red';
+    const dirLabel = p.dir === 'C' ? 'CALL' : 'PUT';
+    const dirColor = p.dir === 'C' ? 'var(--green)' : 'var(--red)';
+    return `<tr>
+      <td>${p.et}</td>
+      <td style="font-weight:600">${p.sym}</td>
+      <td><span style="color:${STRAT_COLORS[p.strat]||'#888'}">${sn(p.strat)}</span></td>
+      <td style="color:${dirColor}">${dirLabel}</td>
+      <td class="right">${p.strike}</td>
+      <td class="right">${p.qty}</td>
+      <td class="right">$${p.entry.toFixed(2)}</td>
+      <td class="right">$${p.hwm.toFixed(2)}</td>
+      <td class="right" style="color:var(--purple)">$${p.cap.toLocaleString()}</td>
+      <td>${p.exp}</td>
+      <td class="right ${hwmCls}">${hwmPct}%</td>
+      <td class="right" style="color:var(--text2)">${p.delta ? p.delta.toFixed(3) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAll() {
+  renderPills();
+  renderHero();
+  renderOpenPosBanner();
+  renderOpenPositions();
+  renderSymChart();
+  renderSymCapChart();
+  renderStratChart();
+  renderHeatmap();
+  renderDirChart();
+  renderExitChart();
+  renderTable();
+}
+
+// Initial render
+renderAll();
+</script>
+</body>
+</html>

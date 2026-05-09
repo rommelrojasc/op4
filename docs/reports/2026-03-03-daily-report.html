@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OP3 Auto-Trader Daily Report — March 3, 2026</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2333;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --green: #39d98a;
+            --red: #ff6b6b;
+            --blue: #58a6ff;
+            --orange: #f5a623;
+            --yellow: #ffd93d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Navigation */
+        nav {
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        nav h1 {
+            font-size: 1.5rem;
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        nav .mode-badge {
+            background: var(--orange);
+            color: var(--bg-primary);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--blue);
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Section */
+        section {
+            margin: 60px 0;
+            scroll-margin-top: 80px;
+        }
+
+        section h3 {
+            font-size: 1.8rem;
+            color: var(--blue);
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        section h4 {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            margin: 30px 0 15px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Metric Grid */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 8px;
+        }
+
+        .metric-value.positive {
+            color: var(--green);
+        }
+
+        .metric-value.negative {
+            color: var(--red);
+        }
+
+        .metric-value.neutral {
+            color: var(--blue);
+        }
+
+        .metric-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: var(--bg-secondary);
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--blue);
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody tr:hover {
+            background: rgba(88, 166, 255, 0.1);
+        }
+
+        .positive {
+            color: var(--green);
+        }
+
+        .negative {
+            color: var(--red);
+        }
+
+        .mono {
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Callout boxes */
+        .callout {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--blue);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .callout.warning {
+            border-left-color: var(--orange);
+        }
+
+        .callout.danger {
+            border-left-color: var(--red);
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .callout.success {
+            border-left-color: var(--green);
+        }
+
+        .callout h5 {
+            color: var(--blue);
+            margin-bottom: 8px;
+        }
+
+        .callout.warning h5 {
+            color: var(--orange);
+        }
+
+        .callout.danger h5 {
+            color: var(--red);
+        }
+
+        .callout.success h5 {
+            color: var(--green);
+        }
+
+        /* Bar Chart */
+        .bar-chart {
+            margin: 30px 0;
+        }
+
+        .bar-item {
+            margin-bottom: 15px;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .bar-track {
+            background: var(--bg-secondary);
+            height: 30px;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: width 0.5s ease;
+        }
+
+        .bar-fill.positive {
+            background: linear-gradient(90deg, var(--green), #2ecc71);
+        }
+
+        .bar-fill.negative {
+            background: linear-gradient(90deg, var(--red), #e74c3c);
+        }
+
+        /* Heatmap */
+        .heatmap-row {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .heatmap-row.hot {
+            background: rgba(57, 217, 138, 0.15);
+        }
+
+        .heatmap-row.cold {
+            background: rgba(255, 107, 107, 0.15);
+        }
+
+        /* Priority badges */
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .priority-critical {
+            background: var(--red);
+            color: white;
+        }
+
+        .priority-high {
+            background: var(--orange);
+            color: var(--bg-primary);
+        }
+
+        .priority-medium {
+            background: var(--yellow);
+            color: var(--bg-primary);
+        }
+
+        .priority-low {
+            background: var(--blue);
+            color: white;
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-yes {
+            background: var(--green);
+            color: var(--bg-primary);
+        }
+
+        .status-no {
+            background: var(--red);
+            color: white;
+        }
+
+        .status-pending {
+            background: var(--orange);
+            color: var(--bg-primary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 60px;
+        }
+
+        /* Verdict Box */
+        .verdict-box {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(57, 217, 138, 0.1));
+            border: 1px solid var(--blue);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* Risk levels */
+        .risk-high {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .risk-moderate {
+            color: var(--orange);
+            font-weight: 600;
+        }
+
+        .risk-low {
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav h1 {
+                font-size: 1.2rem;
+            }
+
+            header h2 {
+                font-size: 1.8rem;
+            }
+
+            .metric-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+
+            .metric-value {
+                font-size: 1.5rem;
+            }
+
+            section h3 {
+                font-size: 1.5rem;
+            }
+
+            th, td {
+                padding: 8px;
+                font-size: 0.85rem;
+            }
+        }
+
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 968px) {
+            .two-col-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h1>OP3 Auto-Trader</h1>
+                <span class="mode-badge">PAPER TRADING</span>
+            </div>
+            <div class="nav-links">
+                <a href="#summary">Summary</a>
+                <a href="#market">Market Context</a>
+                <a href="#worked">What Worked</a>
+                <a href="#didnt-work">What Didn't Work</a>
+                <a href="#exits">Exit Management</a>
+                <a href="#timing">Timing</a>
+                <a href="#signals">Signal Efficiency</a>
+                <a href="#positions">Position Management</a>
+                <a href="#bugs">Bugs & Issues</a>
+                <a href="#open">Open Positions</a>
+                <a href="#recommendations">Recommendations</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h2>OP3 Auto-Trader Daily Report</h2>
+            <p class="subtitle">March 3, 2026 — Paper Trading Mode</p>
+        </header>
+
+        <!-- SECTION 1: EXECUTIVE SUMMARY -->
+        <section id="summary">
+            <h3>Executive Summary</h3>
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Realized P&L</div>
+                    <div class="metric-value positive">+$2,604.21</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Trades Opened</div>
+                    <div class="metric-value neutral">36</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Trades Closed</div>
+                    <div class="metric-value neutral">30</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Still Open</div>
+                    <div class="metric-value neutral">13</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value positive">73%</div>
+                    <div class="metric-subtitle">22W / 8L</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Best Strategy</div>
+                    <div class="metric-value positive">strategy-1</div>
+                    <div class="metric-subtitle">+$1,604 | 100% WR</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Worst Strategy</div>
+                    <div class="metric-value negative">strategy7</div>
+                    <div class="metric-subtitle">-$2,571 | 42% WR</div>
+                </div>
+            </div>
+
+            <div class="verdict-box">
+                <strong>Verdict:</strong> A profitable day driven by strong trailing stop captures on swing positions and SPX 0DTE trades, but severely dragged by strategy7 holding 0DTE positions to worthlessness.
+            </div>
+        </section>
+
+        <!-- SECTION 2: MARKET CONTEXT -->
+        <section id="market">
+            <h3>Market Context</h3>
+            <div class="card">
+                <ul style="list-style-position: inside; line-height: 2;">
+                    <li>Market gapped down at open then rallied strongly all day</li>
+                    <li>Early put signals (QQQ, SPY, IWM) at 09:36-10:48 caught the wrong side</li>
+                    <li>Call signals dominated from 11:00 onward — <strong class="positive">81 calls</strong> vs <strong class="negative">34 puts</strong> (70% call bias)</li>
+                    <li>SPX ran from ~6785 to 6820+, QQQ from ~596 to ~605</li>
+                    <li>Overnight puts from Mar 2 captured gap-down when manually closed at open</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECTION 3: WHAT WORKED -->
+        <section id="worked">
+            <h3>What Worked</h3>
+
+            <div class="card">
+                <h4>strategy-1: +$1,604 | 4/4 wins | 100% WR</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>Direction</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>P&L</th>
+                                <th>Close Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PFE P 27.0</td>
+                                <td>PUT</td>
+                                <td class="mono">$0.25 (Mar 2)</td>
+                                <td class="mono">$0.48</td>
+                                <td class="mono positive">+$906</td>
+                                <td>Manual (overnight)</td>
+                            </tr>
+                            <tr>
+                                <td>MRNA P 49.0</td>
+                                <td>PUT</td>
+                                <td class="mono">$0.94 (Mar 2)</td>
+                                <td class="mono">$1.31</td>
+                                <td class="mono positive">+$365</td>
+                                <td>Manual (overnight)</td>
+                            </tr>
+                            <tr>
+                                <td>AMZN C 212.5</td>
+                                <td>CALL</td>
+                                <td class="mono">$1.20</td>
+                                <td class="mono">$1.34</td>
+                                <td class="mono positive">+$112</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>C C 114.0</td>
+                                <td>CALL</td>
+                                <td class="mono">$0.75</td>
+                                <td class="mono">$0.92</td>
+                                <td class="mono positive">+$221</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout success">
+                    <p><strong>Note:</strong> Overnight puts captured the gap-down. Afternoon calls rode the rally.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>strategy4 (magnet effect): +$1,117 | 7/8 wins | 88% WR</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>Entry Time</th>
+                                <th>P&L</th>
+                                <th>P&L %</th>
+                                <th>Hold Time</th>
+                                <th>Close Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>BABA C 145</td>
+                                <td>11:02</td>
+                                <td class="mono positive">+$154</td>
+                                <td class="mono positive">+15.6%</td>
+                                <td>8m</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>TSLA C 405</td>
+                                <td>11:19</td>
+                                <td class="mono positive">+$120</td>
+                                <td class="mono positive">+12.8%</td>
+                                <td>9m</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>C C 113</td>
+                                <td>10:50</td>
+                                <td class="mono positive">+$195</td>
+                                <td class="mono positive">+20.6%</td>
+                                <td>1.7h</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>AMD C 200</td>
+                                <td>11:21</td>
+                                <td class="mono positive">+$102</td>
+                                <td class="mono positive">+11.7%</td>
+                                <td>1.4h</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>MRNA C 51</td>
+                                <td>12:45</td>
+                                <td class="mono positive">+$162</td>
+                                <td class="mono positive">+17.3%</td>
+                                <td>2.4h</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>GOOG C 310</td>
+                                <td>11:19</td>
+                                <td class="mono positive">+$147</td>
+                                <td class="mono positive">+15.9%</td>
+                                <td>4.1h</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>NVDA C 185</td>
+                                <td>10:18</td>
+                                <td class="mono negative">-$16</td>
+                                <td class="mono negative">-1.6%</td>
+                                <td>5.3h</td>
+                                <td>Trailing stop</td>
+                            </tr>
+                            <tr>
+                                <td>LI C 17</td>
+                                <td>13:12</td>
+                                <td class="mono positive">+$253</td>
+                                <td class="mono positive">+25.7%</td>
+                                <td>2.4h</td>
+                                <td>Manual close</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout success">
+                    <p><strong>Note:</strong> The workhorse. Every call benefited from the broad rally. Even the one "loss" (NVDA -$16) was only -1.6%.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>strategy2 (midline bounce): +$1,200 | 3/3 wins | 100% WR</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>Entry</th>
+                                <th>P&L</th>
+                                <th>Close Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>MSFT P 382.5</td>
+                                <td class="mono">Mar 2 15:42</td>
+                                <td class="mono positive">+$588</td>
+                                <td>Manual (overnight)</td>
+                            </tr>
+                            <tr>
+                                <td>HOOD P 68</td>
+                                <td class="mono">Mar 3 10:04</td>
+                                <td class="mono positive">+$420</td>
+                                <td>Trailing stop (+44.8%)</td>
+                            </tr>
+                            <tr>
+                                <td>QCOM P 134</td>
+                                <td class="mono">Mar 2 10:23</td>
+                                <td class="mono positive">+$192</td>
+                                <td>Trailing stop (+20.0%)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>strategy9 (0DTE gap fade): +$530 | 1/1 wins</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>Entry</th>
+                                <th>Peak</th>
+                                <th>Exit</th>
+                                <th>P&L %</th>
+                                <th>Hold Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>SPX C 6820</td>
+                                <td class="mono">$11.60</td>
+                                <td class="mono">$19.10</td>
+                                <td class="mono">$16.90</td>
+                                <td class="mono positive">+46%</td>
+                                <td>7 minutes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout success">
+                    <p>SPX C 6820 — entered at $11.60, peaked at $19.10, trail captured at $16.90. +46% in 7 minutes.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>strategy3 (gap fade): +$464 | 1/1 wins</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>Description</th>
+                                <th>Hold Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PYPL C 48</td>
+                                <td>Gap-fade long. Trail activated at 23%, HWM tracked to 50%, captured at 47%</td>
+                                <td>2.1h</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>strategy10 (0DTE trend): +$260 | 1/1 wins</h4>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Trade</th>
+                                <th>P&L %</th>
+                                <th>Hold Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>SPX C 6785</td>
+                                <td class="mono positive">+18%</td>
+                                <td>21 minutes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout success">
+                    <p>SPX C 6785 — bullish momentum. +18% in 21 minutes.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: WHAT DIDN'T WORK -->
+        <section id="didnt-work">
+            <h3>What Didn't Work</h3>
+
+            <div class="card" style="border: 2px solid var(--red);">
+                <h4 style="color: var(--red);">strategy7 (0DTE scalper): -$2,571 | 5/12 wins | 42% WR</h4>
+
+                <div class="callout danger">
+                    <h5>Critical Impact</h5>
+                    <p style="font-size: 1.1rem; font-weight: 600;">Without strategy7, the day would have been <span class="positive">+$5,175</span></p>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Symbol</th>
+                                <th>Strike</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>P&L</th>
+                                <th>P&L %</th>
+                                <th>Hold Time</th>
+                                <th>Close Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>QQQ</td>
+                                <td>P 595</td>
+                                <td class="mono">$2.30</td>
+                                <td class="mono">$1.81</td>
+                                <td class="mono negative">-$196</td>
+                                <td class="mono negative">-21.3%</td>
+                                <td>29s</td>
+                                <td>Stop loss</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>QQQ</td>
+                                <td>C 596</td>
+                                <td class="mono">$2.69</td>
+                                <td class="mono">$3.12</td>
+                                <td class="mono positive">+$129</td>
+                                <td class="mono positive">+16.0%</td>
+                                <td>1.2h</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr style="background: rgba(255, 107, 107, 0.15);">
+                                <td>3</td>
+                                <td>IWM</td>
+                                <td>P 253</td>
+                                <td class="mono">$0.66</td>
+                                <td class="mono">$0.01</td>
+                                <td class="mono negative">-$975</td>
+                                <td class="mono negative">-98.5%</td>
+                                <td>5.4h</td>
+                                <td><strong>Forced expiry</strong></td>
+                            </tr>
+                            <tr style="background: rgba(255, 107, 107, 0.15);">
+                                <td>4</td>
+                                <td>SPY</td>
+                                <td>P 671</td>
+                                <td class="mono">$2.17</td>
+                                <td class="mono">$0.01</td>
+                                <td class="mono negative">-$864</td>
+                                <td class="mono negative">-99.5%</td>
+                                <td>5.2h</td>
+                                <td><strong>Forced expiry</strong></td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>QQQ</td>
+                                <td>C 598</td>
+                                <td class="mono">$2.21</td>
+                                <td class="mono">$2.35</td>
+                                <td class="mono positive">+$56</td>
+                                <td class="mono positive">+6.3%</td>
+                                <td>4m</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td>QQQ</td>
+                                <td>C 600</td>
+                                <td class="mono">$1.29</td>
+                                <td class="mono">$1.22</td>
+                                <td class="mono negative">-$49</td>
+                                <td class="mono negative">-5.4%</td>
+                                <td>16m</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr>
+                                <td>7</td>
+                                <td>QQQ</td>
+                                <td>C 603</td>
+                                <td class="mono">$0.91</td>
+                                <td class="mono">$0.90</td>
+                                <td class="mono negative">-$10</td>
+                                <td class="mono negative">-1.1%</td>
+                                <td>1.8h</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr>
+                                <td>8</td>
+                                <td>QQQ</td>
+                                <td>C 602</td>
+                                <td class="mono">$1.55</td>
+                                <td class="mono">$1.66</td>
+                                <td class="mono positive">+$66</td>
+                                <td class="mono positive">+7.1%</td>
+                                <td>2m</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr>
+                                <td>9</td>
+                                <td>QQQ</td>
+                                <td>C 602</td>
+                                <td class="mono">$1.75</td>
+                                <td class="mono">$1.96</td>
+                                <td class="mono positive">+$105</td>
+                                <td class="mono positive">+12.0%</td>
+                                <td>2m</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr>
+                                <td>10</td>
+                                <td>QQQ</td>
+                                <td>C 604</td>
+                                <td class="mono">$0.94</td>
+                                <td class="mono">$0.89</td>
+                                <td class="mono negative">-$50</td>
+                                <td class="mono negative">-5.3%</td>
+                                <td>1m</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr>
+                                <td>11</td>
+                                <td>QQQ</td>
+                                <td>C 603</td>
+                                <td class="mono">$1.42</td>
+                                <td class="mono">$1.65</td>
+                                <td class="mono positive">+$161</td>
+                                <td class="mono positive">+16.2%</td>
+                                <td>1.0h</td>
+                                <td>Target</td>
+                            </tr>
+                            <tr style="background: rgba(255, 107, 107, 0.15);">
+                                <td>12</td>
+                                <td>QQQ</td>
+                                <td>C 605</td>
+                                <td class="mono">$0.60</td>
+                                <td class="mono">$0.01</td>
+                                <td class="mono negative">-$944</td>
+                                <td class="mono negative">-98.3%</td>
+                                <td>1.2h</td>
+                                <td><strong>Forced expiry</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="margin-top: 30px; color: var(--orange);">Root Causes</h4>
+                <div class="two-col-grid">
+                    <div class="callout danger">
+                        <h5>1. stopLossPct: 0 (disabled)</h5>
+                        <p>Positions decayed to $0.01 with no exit mechanism</p>
+                    </div>
+                    <div class="callout danger">
+                        <h5>2. Directional confusion</h5>
+                        <p>Held puts while generating call signals on same symbols</p>
+                    </div>
+                    <div class="callout danger">
+                        <h5>3. One-position-per-symbol</h5>
+                        <p>SPY put blocked 30+ profitable call signals</p>
+                    </div>
+                    <div class="callout danger">
+                        <h5>4. Late OTM entry</h5>
+                        <p>QQQ C 605 at 14:47, far OTM with 1hr to expiry</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: EXIT MANAGEMENT -->
+        <section id="exits">
+            <h3>Exit Management</h3>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Exit Mechanism</th>
+                            <th>Count</th>
+                            <th>Total P&L</th>
+                            <th>Avg P&L</th>
+                            <th>Win Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="heatmap-row hot">
+                            <td><strong>Trailing stop</strong></td>
+                            <td class="mono">14</td>
+                            <td class="mono positive">+$3,063</td>
+                            <td class="mono positive">+$219</td>
+                            <td class="mono positive">93%</td>
+                        </tr>
+                        <tr class="heatmap-row hot">
+                            <td><strong>Manual close</strong></td>
+                            <td class="mono">4</td>
+                            <td class="mono positive">+$2,112</td>
+                            <td class="mono positive">+$528</td>
+                            <td class="mono positive">100%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Target reached</strong></td>
+                            <td class="mono">8</td>
+                            <td class="mono positive">+$408</td>
+                            <td class="mono positive">+$51</td>
+                            <td class="mono">63%</td>
+                        </tr>
+                        <tr class="heatmap-row cold">
+                            <td><strong>Stop loss</strong></td>
+                            <td class="mono">1</td>
+                            <td class="mono negative">-$196</td>
+                            <td class="mono negative">-$196</td>
+                            <td class="mono negative">0%</td>
+                        </tr>
+                        <tr class="heatmap-row cold">
+                            <td><strong>Forced expiry</strong></td>
+                            <td class="mono">3</td>
+                            <td class="mono negative">-$2,783</td>
+                            <td class="mono negative">-$928</td>
+                            <td class="mono negative">0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bar-chart">
+                <h4>P&L Contribution by Exit Mechanism</h4>
+                <div class="bar-item">
+                    <div class="bar-label">
+                        <span>Trailing stop</span>
+                        <span class="positive mono">+$3,063</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill positive" style="width: 100%;">93% WR | 14 trades</div>
+                    </div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label">
+                        <span>Manual close</span>
+                        <span class="positive mono">+$2,112</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill positive" style="width: 69%;">100% WR | 4 trades</div>
+                    </div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label">
+                        <span>Target reached</span>
+                        <span class="positive mono">+$408</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill positive" style="width: 13%;">63% WR | 8 trades</div>
+                    </div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label">
+                        <span>Stop loss</span>
+                        <span class="negative mono">-$196</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill negative" style="width: 7%;">0% WR | 1 trade</div>
+                    </div>
+                </div>
+                <div class="bar-item">
+                    <div class="bar-label">
+                        <span>Forced expiry</span>
+                        <span class="negative mono">-$2,783</span>
+                    </div>
+                    <div class="bar-track">
+                        <div class="bar-fill negative" style="width: 91%;">0% WR | 3 trades</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="callout">
+                <p><strong>Key Insight:</strong> Trailing stop is the profit engine — 93% win rate, +$219 avg. Forced expiry is the destroyer — 3 trades wiped nearly as much.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 6: TIMING ANALYSIS -->
+        <section id="timing">
+            <h3>Timing Analysis</h3>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hour (ET)</th>
+                            <th>Closes</th>
+                            <th>Win Rate</th>
+                            <th>Avg P&L</th>
+                            <th>Verdict</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="heatmap-row cold">
+                            <td class="mono">09:00</td>
+                            <td class="mono">1</td>
+                            <td class="mono negative">0%</td>
+                            <td class="mono negative">-$196</td>
+                            <td class="negative">Avoid</td>
+                        </tr>
+                        <tr class="heatmap-row cold">
+                            <td class="mono">10:00</td>
+                            <td class="mono">8</td>
+                            <td class="mono">63%</td>
+                            <td class="mono negative">-$69</td>
+                            <td class="negative">Dangerous</td>
+                        </tr>
+                        <tr class="heatmap-row hot">
+                            <td class="mono">11:00</td>
+                            <td class="mono">9</td>
+                            <td class="mono positive">78%</td>
+                            <td class="mono positive">+$138</td>
+                            <td class="positive">Sweet spot</td>
+                        </tr>
+                        <tr class="heatmap-row hot">
+                            <td class="mono">12:00</td>
+                            <td class="mono">1</td>
+                            <td class="mono positive">100%</td>
+                            <td class="mono positive">+$162</td>
+                            <td class="positive">Good</td>
+                        </tr>
+                        <tr class="heatmap-row hot">
+                            <td class="mono">13:00</td>
+                            <td class="mono">8</td>
+                            <td class="mono positive">88%</td>
+                            <td class="mono positive">+$175</td>
+                            <td class="positive">Best hour</td>
+                        </tr>
+                        <tr class="heatmap-row cold">
+                            <td class="mono">14:00</td>
+                            <td class="mono">1</td>
+                            <td class="mono negative">0%</td>
+                            <td class="mono negative">-$944</td>
+                            <td class="negative">Terrible</td>
+                        </tr>
+                        <tr class="heatmap-row hot">
+                            <td class="mono">15:00</td>
+                            <td class="mono">2</td>
+                            <td class="mono positive">100%</td>
+                            <td class="mono positive">+$747</td>
+                            <td class="positive">Overnight pays off</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 7: SIGNAL EFFICIENCY -->
+        <section id="signals">
+            <h3>Signal Efficiency</h3>
+
+            <div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="metric-card">
+                    <div class="metric-label">Unique Signals</div>
+                    <div class="metric-value neutral">166</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Signals Traded</div>
+                    <div class="metric-value neutral">36</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Execution Rate</div>
+                    <div class="metric-value neutral">22%</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Signal Breakdown</h4>
+                <ul style="list-style-position: inside; line-height: 2;">
+                    <li><strong>strategy7:</strong> 79 signals, 12 traded (15%) — <span class="negative">drowning in noise</span></li>
+                    <li><strong>strategy8:</strong> 7 signals, 0 traded — <span class="negative">all blocked by existing positions</span></li>
+                    <li><strong>SPY call signals:</strong> 30+ blocked by existing put position</li>
+                    <li><strong>IWM call signals:</strong> 20+ blocked by existing put position</li>
+                    <li><strong>NIO:</strong> Retried 144 times for no_strike_match</li>
+                    <li><strong>AVGO:</strong> Retried 137 times for no_strike_match</li>
+                    <li><strong>CT15 puts at open:</strong> 19 signals blocked by operating window</li>
+                </ul>
+            </div>
+
+            <div class="callout warning">
+                <h5>Signal Waste Analysis</h5>
+                <p>Over 100 potentially profitable signals were blocked by existing positions or failed strike lookups. The one-position-per-symbol rule prevented the system from flipping directional bias when market conditions changed.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 8: POSITION MANAGEMENT -->
+        <section id="positions">
+            <h3>Position Management</h3>
+
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Peak Concurrent 0DTE</div>
+                    <div class="metric-value neutral">5</div>
+                    <div class="metric-subtitle">at 11:41</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Total Capital Deployed</div>
+                    <div class="metric-value neutral">$34,630</div>
+                    <div class="metric-subtitle">87% of $40k limit</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Still Open</div>
+                    <div class="metric-value neutral">13</div>
+                    <div class="metric-subtitle">12 calls + 1 put</div>
+                </div>
+            </div>
+
+            <div class="callout warning">
+                <h5>Correlation Risk</h5>
+                <p>High correlation risk detected: simultaneous puts on SPY/IWM while holding calls on QQQ/SPX. This created conflicting directional exposure during a trending day.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 9: BUGS AND SYSTEM ISSUES -->
+        <section id="bugs">
+            <h3>Bugs and System Issues</h3>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Bug</th>
+                            <th>Impact</th>
+                            <th>Fixed?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>wants_0dte UnboundLocalError</td>
+                            <td>2 failed QQQ attempts at 09:32-09:34</td>
+                            <td><span class="status-badge status-yes">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td>float("") ValueError</td>
+                            <td>Crashed position check cycle</td>
+                            <td><span class="status-badge status-yes">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td>Signal re-detection noise (CT15)</td>
+                            <td>170+ duplicate events</td>
+                            <td><span class="status-badge status-yes">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td>pnl_pct x100 on manual closes</td>
+                            <td>Inflated percentages in reports</td>
+                            <td><span class="status-badge status-yes">Yes</span></td>
+                        </tr>
+                        <tr style="background: rgba(255, 107, 107, 0.1);">
+                            <td><strong>stopLossPct: "" in settings</strong></td>
+                            <td><strong>Strategy7 stop loss disabled</strong></td>
+                            <td><span class="status-badge status-no">Not yet</span></td>
+                        </tr>
+                        <tr style="background: rgba(245, 166, 35, 0.1);">
+                            <td>maxHoldMinutes: 5 not enforced</td>
+                            <td>S7 positions held 5+ hours</td>
+                            <td><span class="status-badge status-pending">Needs investigation</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 10: OPEN POSITIONS -->
+        <section id="open">
+            <h3>Open Positions</h3>
+
+            <div class="callout warning">
+                <p><strong>Total at Risk:</strong> $12,409 across 13 positions, all expiring Mar 6</p>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Direction</th>
+                            <th>Strike</th>
+                            <th>Cost</th>
+                            <th>Strategy</th>
+                            <th>Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="mono">USO</td>
+                            <td>PUT</td>
+                            <td class="mono">$82</td>
+                            <td class="mono">$970</td>
+                            <td>strategy4</td>
+                            <td class="risk-moderate">Contrarian to rally</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">WMT</td>
+                            <td>CALL</td>
+                            <td class="mono">$130</td>
+                            <td class="mono">$924</td>
+                            <td>strategy2</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">DIA</td>
+                            <td>CALL</td>
+                            <td class="mono">$496</td>
+                            <td class="mono">$896</td>
+                            <td>strategy-1</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">PLTR</td>
+                            <td>PUT</td>
+                            <td class="mono">$135</td>
+                            <td class="mono">$976</td>
+                            <td>strategy-1</td>
+                            <td class="risk-high">High</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">PFE</td>
+                            <td>CALL</td>
+                            <td class="mono">$26.5</td>
+                            <td class="mono">$989</td>
+                            <td>strategy4</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">QCOM</td>
+                            <td>CALL</td>
+                            <td class="mono">$139</td>
+                            <td class="mono">$906</td>
+                            <td>strategy4</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">SOXL</td>
+                            <td>CALL</td>
+                            <td class="mono">$60</td>
+                            <td class="mono">$992</td>
+                            <td>strategy4</td>
+                            <td class="risk-high">High</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">URA</td>
+                            <td>CALL</td>
+                            <td class="mono">$54</td>
+                            <td class="mono">$960</td>
+                            <td>strategy4</td>
+                            <td class="risk-low">Lower risk</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">HD</td>
+                            <td>CALL</td>
+                            <td class="mono">$375</td>
+                            <td class="mono">$900</td>
+                            <td>strategy4</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">AXP</td>
+                            <td>CALL</td>
+                            <td class="mono">$320</td>
+                            <td class="mono">$928</td>
+                            <td>strategy4</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">TNA</td>
+                            <td>CALL</td>
+                            <td class="mono">$55</td>
+                            <td class="mono">$986</td>
+                            <td>strategy-1</td>
+                            <td class="risk-high">High</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">LOW</td>
+                            <td>CALL</td>
+                            <td class="mono">$265</td>
+                            <td class="mono">$990</td>
+                            <td>strategy4</td>
+                            <td class="risk-moderate">Moderate</td>
+                        </tr>
+                        <tr>
+                            <td class="mono">NVDA</td>
+                            <td>CALL</td>
+                            <td class="mono">$185</td>
+                            <td class="mono">$992</td>
+                            <td>strategy-1</td>
+                            <td class="risk-high">High</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 11: RECOMMENDATIONS -->
+        <section id="recommendations">
+            <h3>Recommendations</h3>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Priority</th>
+                            <th>Change</th>
+                            <th>Impact</th>
+                            <th>Effort</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: rgba(255, 107, 107, 0.15);">
+                            <td><span class="priority-badge priority-critical">1 - Critical</span></td>
+                            <td><strong>Enable stop loss for strategy7 (30-50%)</strong></td>
+                            <td>Would have saved ~$1,374</td>
+                            <td>Config change</td>
+                        </tr>
+                        <tr style="background: rgba(245, 166, 35, 0.1);">
+                            <td><span class="priority-badge priority-high">2 - High</span></td>
+                            <td><strong>Add timeExitAt: "15:30" for strategy7</strong></td>
+                            <td>Prevents forced expiry losses</td>
+                            <td>Small code change</td>
+                        </tr>
+                        <tr style="background: rgba(245, 166, 35, 0.1);">
+                            <td><span class="priority-badge priority-high">3 - High</span></td>
+                            <td><strong>Investigate maxHoldMinutes: 5 enforcement</strong></td>
+                            <td>S7 held 5+ hours instead of 5 min</td>
+                            <td>Bug investigation</td>
+                        </tr>
+                        <tr style="background: rgba(255, 217, 61, 0.1);">
+                            <td><span class="priority-badge priority-medium">4 - Medium</span></td>
+                            <td><strong>Unblock strategy8 execution</strong></td>
+                            <td>7 signals, 0 trades</td>
+                            <td>Design decision</td>
+                        </tr>
+                        <tr style="background: rgba(255, 217, 61, 0.1);">
+                            <td><span class="priority-badge priority-medium">5 - Medium</span></td>
+                            <td><strong>Increase strategy7 cooldown 1→5-10 min</strong></td>
+                            <td>Reduce noise 79→~15 signals</td>
+                            <td>Config change</td>
+                        </tr>
+                        <tr style="background: rgba(255, 217, 61, 0.1);">
+                            <td><span class="priority-badge priority-medium">6 - Medium</span></td>
+                            <td><strong>Cache failed strike lookups</strong></td>
+                            <td>Stop 365 retries on NIO/AVGO/MU</td>
+                            <td>Small code change</td>
+                        </tr>
+                        <tr style="background: rgba(88, 166, 255, 0.1);">
+                            <td><span class="priority-badge priority-low">7 - Low</span></td>
+                            <td><strong>Stop post-close signal processing</strong></td>
+                            <td>60+ phantom signals at 16:00</td>
+                            <td>Small code change</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>Report generated from trade_log.jsonl and auto_trader_events.jsonl</p>
+        <p>Paper trading mode • OP3 Auto-Trader v1.0</p>
+        <p style="margin-top: 10px; color: var(--text-secondary);">Generated on March 3, 2026</p>
+    </footer>
+</body>
+</html>
