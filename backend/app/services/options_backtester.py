@@ -552,7 +552,7 @@ def run_backtest(
                             bars_5m=_s14_day_bars_5m,
                             gex_levels=_gex_s14,
                             settings={"strategy14": _s14_merged},
-                            scan_interval=5,
+                            scan_interval=1,  # Match the live auto-trader's per-tick cadence
                         )
                         for sig in _s14_sigs:
                             if sig.id not in seen_ids:

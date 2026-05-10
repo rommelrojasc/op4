@@ -306,7 +306,7 @@ def scan_day_for_gamma_zero_signals(
     bars_5m: List[Bar],
     gex_levels: Dict[str, Any],
     settings: Dict[str, Any],
-    scan_interval: int = 5,
+    scan_interval: int = 1,
 ) -> List[StrategySignal]:
     """Walk a day's 1m bars and collect Gamma Zero signals.
 
@@ -321,7 +321,9 @@ def scan_day_for_gamma_zero_signals(
         gex_levels: GEX levels for the day. If still in backtest shape (regime
             "BULLISH"/"BEARISH"), pass through adapt_backtest_gex_for_s14() first.
         settings: Strategy settings dict (must contain "strategy14")
-        scan_interval: Walk every N bars (default 5 minutes)
+        scan_interval: Walk every N 1m bars (default 1 — matches the live
+            auto-trader's per-tick scan cadence so backtest signals reflect
+            what live would actually have produced).
 
     Returns:
         Deduplicated list of StrategySignal objects.
