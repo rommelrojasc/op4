@@ -9,8 +9,12 @@ the cero_gamma_v4 spec:
     Position 3 — below Put Wall         (PUT: free fall)
     Position 4 — reclaiming broken PW   (CALL exception, off by default)
 
-Entry windows: 10:00–11:30 ET and 14:00–15:00 ET (dual).
-Skip zone:     ±gammaZeroBufferPct around the gamma flip price.
+Entry window: single contiguous range from entryStartTime to entryEndTime
+              (same convention as S7-S10). The cero_gamma_v4 spec's original
+              dual-window split (10:00–11:30 + 14:00–15:00 with an 11:30–14:00
+              dead zone) lives in `_within_dual_window()` and can be re-enabled
+              by swapping the call inside the detector.
+Skip zone:    ±gammaZeroBufferPct around the gamma flip price.
 """
 from __future__ import annotations
 
@@ -22,6 +26,7 @@ from app.services.strategy_analysis import (
     Bar,
     StrategySignal,
     get_ny_parts,
+    within_0dte_window,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,7 +47,14 @@ class GammaZeroSignal:
 
 
 def _within_dual_window(current_time: int) -> bool:
-    """True when current_time falls in 10:00–11:30 ET or 14:00–15:00 ET."""
+    """[Legacy, no longer called by the detector.]
+
+    Originally implemented the cero_gamma_v4 spec's dual entry windows
+    (10:00–11:30 + 14:00–15:00 ET) with a hardcoded 11:30–14:00 dead zone.
+    Kept around for reference; live detection now uses the standard
+    `within_0dte_window(start, end)` helper driven by entryStartTime /
+    entryEndTime settings, matching every other 0DTE strategy.
+    """
     parts = get_ny_parts(current_time)
     mins = parts["hour"] * 60 + parts["minute"]
     return (600 <= mins <= 690) or (840 <= mins <= 900)
@@ -136,10 +148,16 @@ def detect_strategy14_gamma_zero(
     if spot <= 0:
         return out
 
-    # Time-window gate
+    # Time-window gate — single contiguous window driven by
+    # entryStartTime / entryEndTime, same convention as S7-S10. To restore
+    # the original cero_gamma_v4 dual-window behaviour (10:00–11:30 +
+    # 14:00–15:00 with a hardcoded 11:30–14:00 dead zone), call
+    # _within_dual_window(current_time) here instead.
     last_bar = bars1m[-1]
     current_time = last_bar["time"]
-    if not _within_dual_window(current_time):
+    entry_start = s14.get("entryStartTime", "10:00")
+    entry_end = s14.get("entryEndTime", "15:00")
+    if not within_0dte_window(current_time, entry_start, entry_end):
         return out
 
     # No-go: at gamma flip

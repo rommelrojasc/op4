@@ -33,7 +33,7 @@ The strategy maps current price against three GEX-derived levels — Call Wall, 
 
 A no-go zone of `±gammaZeroBufferPct` around the gamma flip suppresses all entries (matches the "wait 15–30 min at gamma zero" spec rule).
 
-Two entry windows are enforced inside the detector: **10:00–11:30 ET** and **14:00–15:00 ET**. Outside these, no signals fire regardless of `entryStartTime` / `entryEndTime`.
+Entries are gated by a single contiguous time window driven by `entryStartTime` and `entryEndTime` — same convention as the other 0DTE strategies (S7-S10). The cero_gamma_v4 spec's original dual-window split (10:00–11:30 + 14:00–15:00 with an 11:30–14:00 "dead zone") still lives in the codebase as `_within_dual_window()` and can be re-enabled by editing the detector if you ever want spec-strict behaviour.
 
 ---
 
@@ -46,10 +46,10 @@ Settings live under the `strategy14` key in `strategy_defaults.py` and may be ov
 | Setting | Default | Description |
 |---|---|---|
 | `enabled` | `false` | Master toggle. Setting `true` here enables S14 globally; you can also enable per-ticker by adding `14` to `tickerSettings[symbol].enabledStrategies`. |
-| `operatingStartTime` | `"10:00"` | Outer bound checked by the auto-trader before invoking the detector. The detector itself enforces the dual entry windows below this layer. |
-| `operatingEndTime` | `"15:00"` | Outer bound checked by the auto-trader. Keep ≥ end of the second window (15:00). |
-| `entryStartTime` | `"10:00"` | Outer entry window start. **Not used by the detector** — the dual 10:00–11:30 and 14:00–15:00 windows are hardcoded. Kept for compatibility with the `_strategy_settings_key` plumbing. |
-| `entryEndTime` | `"15:00"` | Outer entry window end. Same caveat as above. |
+| `operatingStartTime` | `"10:00"` | Outer bound checked by the auto-trader before invoking the detector. |
+| `operatingEndTime` | `"15:00"` | Outer bound checked by the auto-trader. |
+| `entryStartTime` | `"10:00"` | **Earliest time new entries can fire.** Detector skips signals before this. |
+| `entryEndTime` | `"15:00"` | **Latest time new entries can fire.** Detector skips signals after this. Open positions are still managed (TP / SL / trailing / `timeExitAt`). |
 | `timeExitAt` | `"15:00"` | **Hard force-close time.** All open S14 positions are flat-closed at this time regardless of P&L (Golden Rule 5: "always close before 3:00 PM"). |
 | `cooldownMinutes` | `30` | Minimum minutes between successive S14 signals. Prevents the same wall-proximity condition from firing every detector tick. |
 
@@ -136,7 +136,7 @@ Either way, the auto-trader will:
 | Signal storm in a chop day | Verify `cooldownMinutes ≥ 15`. The detector emits one signal per 1m tick when a condition holds, so cooldown is what spaces them out. |
 | Stuck at gamma zero | Working as intended — `gammaZeroBufferPct` blocks entries near the flip. If price oscillates around the flip all day, no signal. |
 | Want to test reclaim | Set `enableReclaimEntries=true` and tighten `minBounceVolumeRatio=1.5`. Watch the `s14_signal` events for `position=reclaim_pw`. |
-| Need to stop trading early | Lower `timeExitAt` (e.g. to 14:30). Anything earlier than the second window's start (14:00) effectively disables that window. |
+| Need to stop trading early | Lower `entryEndTime` to skip new entries from that point, and/or `timeExitAt` to force-close existing positions. |
 
 ---
 
@@ -152,7 +152,7 @@ Activity feed events emitted by S14:
 If S14 is enabled but no signals appear:
 
 1. Check `gex_refresh` is firing — if not, IB Greeks subscription may be missing, and `compute_gex()` is returning `{"error": ...}`.
-2. Check the time — outside 10:00–11:30 ET and 14:00–15:00 ET, no signals fire by design.
+2. Check the time — outside `entryStartTime`–`entryEndTime`, no signals fire by design.
 3. Check spot vs flip — if price is hovering near the flip, `gammaZeroBufferPct` will silently suppress entries.
 
 ---

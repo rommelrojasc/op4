@@ -1415,7 +1415,7 @@ export function TradingDashboard() {
             </Box>
           )}
         </Box>
-        <MiniChart symbol={dashboardChartSymbol} height={220} interval={dashboardChartInterval} useRth={dashboardChartRth} signals={chartSignals} trades={chartTrades} showGex={dashboardChartGex} />
+        <MiniChart symbol={dashboardChartSymbol} height={440} interval={dashboardChartInterval} useRth={dashboardChartRth} signals={chartSignals} trades={chartTrades} showGex={dashboardChartGex} />
       </Box>
 
       {/* Three-column layout */}
