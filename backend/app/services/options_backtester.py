@@ -337,6 +337,7 @@ def run_backtest(
     _progress("Fetch", f"Bars ready: 1m={len(all_bars_1m)}, 5m={len(all_bars_5m)}", 15)
 
     all_gex_levels = {}  # day_str -> gex_levels for chart rendering
+    gex_sources_by_day: Dict[str, str] = {}  # day_str -> "gexbot_classic_history" / "polygon_bs_approximation"
     # Track which GEX-using strategies actually fired across the run, so the
     # chart only draws the levels relevant to the active strategy.
     _any_s12_active = False
@@ -465,13 +466,58 @@ def run_backtest(
                 )
                 _spot_for_s14 = day_bars[len(day_bars) // 2]["close"] if day_bars else None
                 if _spot_for_s14:
-                    # Reuse cached GEX from S12 if it ran for the same day; otherwise compute now.
-                    _gex_raw = all_gex_levels.get(day_str) or compute_gex_for_backtest(
-                        symbol="SPY", day_str=day_str, spot=_spot_for_s14, strike_range=15
-                    )
-                    if _gex_raw and not _gex_raw.get("error"):
-                        all_gex_levels.setdefault(day_str, _gex_raw)
-                        _gex_s14 = adapt_backtest_gex_for_s14(_gex_raw)
+                    # ── GEX source selection ──
+                    # When strategy14.gexSource == 'gexbot', try real historical
+                    # GexBot Classic for this date first. On 403 (no tier) or any
+                    # other failure, fall back to the existing Polygon + Black-
+                    # Scholes approximation so the backtest still runs.
+                    _gex_source_pref = (_s14_settings.get("gexSource")
+                                         or DEFAULT_STRATEGY_SETTINGS["strategy14"].get("gexSource", "gexbot"))
+                    _gex_s14 = None
+                    _gex_source_used = None
+                    if _gex_source_pref == "gexbot":
+                        from app.services.gex.gexbot_history import fetch_historical_gex_at
+                        _hist = fetch_historical_gex_at("SPX", day_str, view="classic")
+                        if not _hist.get("error"):
+                            # GexBot returns SPX scale (~7000); backtester runs on
+                            # SPY scale (~700). Scale strikes ÷10 to match.
+                            _scale = 0.1 if symbol.upper() == "SPY" else 1.0
+                            if _scale != 1.0:
+                                _hist = {**_hist}
+                                if _hist.get("spot"):
+                                    _hist["spot"] = round(_hist["spot"] * _scale, 2)
+                                for _wk in ("call_wall", "put_wall", "gamma_flip"):
+                                    _w = _hist.get(_wk)
+                                    if isinstance(_w, dict) and _w.get("strike") is not None:
+                                        _hist[_wk] = {
+                                            **_w,
+                                            "strike": round(_w["strike"] * _scale, 2),
+                                            "distance": round((_w.get("distance") or 0) * _scale, 2),
+                                        }
+                            _gex_s14 = _hist
+                            _gex_source_used = _hist.get("source", "gexbot_classic_history")
+                            logger.info(f"  S14 GEX source for {day_str}: {_gex_source_used}")
+                        else:
+                            logger.info(
+                                f"  S14 GEX: GexBot history unavailable for {day_str} ({_hist.get('error')}); "
+                                "falling back to Polygon+BS approximation"
+                            )
+
+                    if _gex_s14 is None:
+                        # Polygon + BS approximation (current default path)
+                        _gex_raw = all_gex_levels.get(day_str) or compute_gex_for_backtest(
+                            symbol="SPY", day_str=day_str, spot=_spot_for_s14, strike_range=15
+                        )
+                        if _gex_raw and not _gex_raw.get("error"):
+                            all_gex_levels.setdefault(day_str, _gex_raw)
+                            _gex_s14 = adapt_backtest_gex_for_s14(_gex_raw)
+                            _gex_source_used = "polygon_bs_approximation"
+
+                    # Track per-day source for report rendering
+                    if _gex_source_used:
+                        gex_sources_by_day[day_str] = _gex_source_used
+
+                    if _gex_s14:
                         # Force allowedTickers to include the backtest symbol so the
                         # detector doesn't reject it (live default is ["SPY"]).
                         _s14_merged = {
@@ -738,12 +784,24 @@ def run_backtest(
                     "net_gex": 0, "day": gex_day,
                 })
 
+    # Roll the per-day GEX-source map into a single label for the report
+    # header (and keep the per-day map for per-day annotations later).
+    _gex_source_summary = None
+    if gex_sources_by_day:
+        _unique_sources = set(gex_sources_by_day.values())
+        if len(_unique_sources) == 1:
+            _gex_source_summary = next(iter(_unique_sources))
+        else:
+            _gex_source_summary = "mixed: " + ", ".join(sorted(_unique_sources))
+
     return {
         "summary": summary,
         "trades": all_trades,
         "day_summaries": day_summaries,
         "chart_bars": chart_bars,
         "gex_zones": gex_zones,
+        "gex_source": _gex_source_summary,
+        "gex_sources_by_day": gex_sources_by_day,
         "settings_used": {
             "profitTargetPct": at_settings.get("profitTargetPct"),
             "trailingStopPct": at_settings.get("trailingStopPct"),

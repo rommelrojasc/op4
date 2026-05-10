@@ -9,6 +9,28 @@ def render_report(data: Dict[str, Any]) -> str:
     day_summaries = data["day_summaries"]
     settings = data.get("settings_used", {})
     chart_bars = data.get("chart_bars", {})
+    gex_source = data.get("gex_source")  # e.g. "gexbot_classic_history" or "polygon_bs_approximation"
+
+    # Render a friendly subtitle suffix describing the GEX data source.
+    _gex_source_labels = {
+        "gexbot_classic_history": ("GexBot Classic (real historical)", "#39d98a"),
+        "polygon_bs_approximation": ("Polygon + Black-Scholes approximation", "#f5a623"),
+        "gexbot_state_history": ("GexBot State 0DTE (real historical)", "#39d98a"),
+    }
+    if gex_source and gex_source in _gex_source_labels:
+        _gex_label, _gex_color = _gex_source_labels[gex_source]
+    elif gex_source and gex_source.startswith("mixed:"):
+        _gex_label, _gex_color = gex_source, "#f5a623"
+    elif gex_source:
+        _gex_label, _gex_color = gex_source, "#7c8190"
+    else:
+        _gex_label, _gex_color = None, "#7c8190"
+    gex_source_html = (
+        f'<span style="margin-left:10px;padding:2px 8px;border-radius:10px;'
+        f'font-size:10px;font-weight:600;letter-spacing:0.04em;'
+        f'border:1px solid {_gex_color};color:{_gex_color}">'
+        f'GEX: {_gex_label}</span>'
+    ) if _gex_label else ""
 
     # Serialize bar data for each timeframe
     chart_bars_json = {}
@@ -232,7 +254,7 @@ def render_report(data: Dict[str, Any]) -> str:
 </head>
 <body>
 <h1>Options Backtest Report</h1>
-<p class="subtitle">{summary['symbol']} &mdash; {summary['start_date']} to {summary['end_date']} &mdash; Real option premiums via Polygon.io</p>
+<p class="subtitle">{summary['symbol']} &mdash; {summary['start_date']} to {summary['end_date']} &mdash; Real option premiums via Polygon.io {gex_source_html}</p>
 
 <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
   <div class="card stat" style="flex:1;min-width:100px">

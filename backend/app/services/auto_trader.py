@@ -1329,21 +1329,27 @@ class AutoTrader:
             _s14_enabled = settings_override.get("strategy14", {}).get("enabled", False) or (_enabled_set is not None and 14 in _enabled_set)
             if _s14_enabled:
                 try:
-                    # Reuse the GEX cache populated by S12 if it's fresh enough;
-                    # otherwise refresh per strategy14's own gexRefreshMinutes.
+                    # Refresh per strategy14's own gexRefreshMinutes, sourced
+                    # via the dispatcher (default: GexBot Classic, IB fallback).
                     _s14_refresh_interval = float(settings_override.get("strategy14", {}).get("gexRefreshMinutes", 10)) * 60
                     if time.time() - self._gex_last_refresh > _s14_refresh_interval:
-                        from app.services.gex_analysis import compute_gex
-                        _gex_data = await compute_gex(symbol="SPX", dte_filter="0dte", strike_range=100)
+                        from app.services.gex import get_gex_levels
+                        _gex_source = settings_override.get("strategy14", {}).get("gexSource", "gexbot")
+                        _gex_data = await get_gex_levels(symbol="SPX", source=_gex_source, fallback=True)
                         if not _gex_data.get("error"):
                             self._gex_cache = _gex_data
                             self._gex_last_refresh = time.time()
+                            _src = _gex_data.get("source", _gex_source)
+                            _fallback_from = _gex_data.get("source_fallback_from")
+                            _src_label = f"{_src}" + (f" (fell back from {_fallback_from})" if _fallback_from else "")
                             self._log_event(
                                 "gex_refresh",
-                                f"GEX levels refreshed (S14): flip={_gex_data.get('gamma_flip',{}).get('strike')}, "
+                                f"GEX levels refreshed (S14): source={_src_label}, "
+                                f"flip={_gex_data.get('gamma_flip',{}).get('strike')}, "
                                 f"CW={_gex_data.get('call_wall',{}).get('strike')}, "
                                 f"PW={_gex_data.get('put_wall',{}).get('strike')}, regime={_gex_data.get('regime')}",
                                 regime=_gex_data.get("regime"),
+                                source=_src,
                             )
 
                     if self._gex_cache and not self._gex_cache.get("error"):

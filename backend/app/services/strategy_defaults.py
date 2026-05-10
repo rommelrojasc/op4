@@ -271,6 +271,10 @@ DEFAULT_STRATEGY_SETTINGS: Dict[str, Any] = {
         "timeExitAt": "15:00",          # Golden Rule 5: close before 3pm
         "cooldownMinutes": 30,
         "allowedTickers": ["SPY"],      # Trade SPY (GEX still derived from SPX 0DTE)
+        # GEX data source. "gexbot" = Classic view (cumulative across all
+        # expirations) per cero_gamma_v4 spec; "ib" = same-day IB option chain
+        # via compute_gex(). Dispatcher auto-falls-back if the chosen source errors.
+        "gexSource": "gexbot",
         # GEX-specific. NOTE: percent-of-spot thresholds — calibrated for SPY (~$700)
         # where 0DTE walls are typically $1–$3 apart. The cero_gamma_v4 spec uses 0.15%
         # / 0.2% which works on SPX ($7000+, walls $10–$30 apart) but blankets the

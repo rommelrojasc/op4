@@ -93,7 +93,7 @@ const TP_HIGHLIGHT_TYPES = new Set([
 ]);
 
 // Strategy metadata for UI configuration with defaults
-const STRATEGY_METADATA: Record<string, { name: string; params: Array<{ key: string; label: string; type: 'number' | 'boolean' | 'time' | 'tickers' | 'percent'; description: string; default: any; min?: number; max?: number; step?: number }> }> = {
+const STRATEGY_METADATA: Record<string, { name: string; params: Array<{ key: string; label: string; type: 'number' | 'boolean' | 'time' | 'tickers' | 'percent' | 'select'; description: string; default: any; min?: number; max?: number; step?: number; options?: string[] }> }> = {
   strategy1: {
     name: 'Intraday Mean Reversion',
     params: [
@@ -363,6 +363,7 @@ const STRATEGY_METADATA: Record<string, { name: string; params: Array<{ key: str
       { key: 'entryEndTime', label: 'Entry End (outer)', type: 'time', description: 'Outer entry end. Detector enforces dual windows internally.', default: '15:00' },
       { key: 'timeExitAt', label: 'Time Exit', type: 'time', description: 'Force-close open positions at this time (ET) — Golden Rule: close before 3pm', default: '15:00' },
       { key: 'cooldownMinutes', label: 'Cooldown (min)', type: 'number', description: 'Minutes between signals', default: 30 },
+      { key: 'gexSource', label: 'GEX Source', type: 'select', options: ['gexbot', 'ib'], description: 'gexbot = Classic GEX (spec-aligned, cumulative across expirations); ib = same-day SPX option chain via IB. Auto-falls-back if the chosen source errors.', default: 'gexbot' },
       { key: 'gexRefreshMinutes', label: 'GEX Refresh (min)', type: 'number', description: 'How often to refresh Call Wall / Put Wall / Gamma Flip', default: 10 },
       { key: 'gammaZeroBufferPct', label: 'Gamma Zero Buffer', type: 'number', description: 'Skip entries when |spot − flip|/spot ≤ this (decimal). Calibrated for SPY: 0.0003 = 0.03% ≈ $0.22. For SPX, use 5–10× larger.', default: 0.0003 },
       { key: 'wallProximityPct', label: 'Wall Proximity', type: 'number', description: 'How close to a wall (decimal) to consider “near” for between-walls entries. SPY default 0.0007 = 0.07% ≈ $0.52. For SPX, use 5–10× larger.', default: 0.0007 },
@@ -4374,6 +4375,38 @@ export function TradingDashboard() {
                             {param.description} (default: {Array.isArray(param.default) ? param.default.join(', ') : 'none'})
                           </Typography>
                         </FormControl>
+                      );
+                    }
+
+                    if (param.type === 'select') {
+                      return (
+                        <TextField
+                          key={param.key}
+                          select
+                          label={param.label}
+                          size="small"
+                          fullWidth
+                          value={currentValue || param.default}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setAutoTraderSettingsDraft((prev: any) => ({
+                              ...prev,
+                              strategySettings: {
+                                ...prev.strategySettings,
+                                [selectedStrategy]: {
+                                  ...(prev.strategySettings?.[selectedStrategy] || {}),
+                                  [param.key]: value,
+                                },
+                              },
+                            }));
+                          }}
+                          helperText={`${param.description} (default: ${param.default ?? 'none'})`}
+                          FormHelperTextProps={{ sx: { fontSize: 10, color: '#9aa0a6' } }}
+                        >
+                          {(param.options ?? []).map((opt) => (
+                            <MenuItem key={opt} value={opt} sx={{ fontSize: 12 }}>{opt}</MenuItem>
+                          ))}
+                        </TextField>
                       );
                     }
 

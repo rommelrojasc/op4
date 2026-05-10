@@ -563,14 +563,23 @@ async def daily_report(date: str = Query(default="", description="Date YYYY-MM-D
 @router.get("/gex-analysis")
 async def gex_analysis(
     symbol: str = Query(default="SPX"),
-    dte_filter: str = Query(default="0dte", description="0dte, weekly, or all"),
-    strike_range: float = Query(default=100, description="Dollar range around spot"),
+    dte_filter: str = Query(default="0dte", description="0dte, weekly, or all (IB only)"),
+    strike_range: float = Query(default=100, description="Dollar range around spot (IB only)"),
+    source: str = Query(default="gexbot", description="GEX data source: 'gexbot' (Classic) or 'ib'"),
+    fallback: bool = Query(default=True, description="Auto-fall-back to the other source on error"),
 ):
-    """Compute gamma exposure analysis."""
-    from app.services.gex_analysis import compute_gex
+    """Return GEX levels (Call Wall / Put Wall / Gamma Flip + profile).
+
+    By default uses GexBot's Classic view (cumulative across all expirations,
+    matching the cero_gamma_v4 spec). Pass `?source=ib` to use the IB-derived
+    same-day option chain instead.
+    """
+    from app.services.gex import get_gex_levels
     try:
-        result = await compute_gex(symbol=symbol, dte_filter=dte_filter, strike_range=strike_range)
-        return result
+        return await get_gex_levels(
+            symbol=symbol, source=source, fallback=fallback,
+            dte_filter=dte_filter, strike_range=strike_range,
+        )
     except Exception as e:
         logger.error(f"GEX analysis error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

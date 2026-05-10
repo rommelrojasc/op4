@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Polygon.io
     POLYGON_API_KEY: str = ""
 
+    # GexBot (Classic GEX source for Strategy 14). Empty string means "not
+    # configured" — the dispatcher will fall back to the IB-derived GEX path.
+    GEXBOT_API_KEY: str = ""
+
     # CORS settings
     CORS_ORIGINS: Union[list[str], str] = "http://localhost:3000,http://localhost:5173"
 
