@@ -5,6 +5,7 @@ from typing import Dict, Tuple
 # Mapping of standard timeframe notation to IB Gateway format
 TIMEFRAME_MAPPING: Dict[str, Dict[str, str]] = {
     "1m": {"bar_size": "1 min", "duration": "3 D"},
+    "2m": {"bar_size": "2 mins", "duration": "3 D"},
     "5m": {"bar_size": "5 mins", "duration": "2 D"},
     "15m": {"bar_size": "15 mins", "duration": "1 W"},
     "30m": {"bar_size": "30 mins", "duration": "1 M"},

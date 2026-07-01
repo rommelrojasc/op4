@@ -255,7 +255,10 @@ def compute_gex_for_backtest(
             return None
 
         logger.info(f"S12 backtest GEX: {len(quotes)} quotes for {len(near_strikes)} strikes on {day_str}")
-        return compute_gex_levels_from_quotes(quotes, spot, strike_range)
+        result = compute_gex_levels_from_quotes(quotes, spot, strike_range)
+        if result is not None:
+            result["quote_count"] = len(quotes)
+        return result
 
     except Exception as e:
         logger.warning(f"Failed to compute backtest GEX: {e}")

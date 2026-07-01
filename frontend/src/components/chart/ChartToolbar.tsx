@@ -61,7 +61,7 @@ import { SYMBOLS, SYMBOL_NAMES } from '@/constants/symbols';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import optimalRanges from '@/data/optimalRanges.json';
 
-const INTERVAL_OPTIONS: Interval[] = ['1d', '1h', '15m', '1m'];
+const INTERVAL_OPTIONS: Interval[] = ['1d', '1h', '15m', '2m', '1m'];
  
 
 export function ChartToolbar({ onBack }: { onBack?: () => void }) {

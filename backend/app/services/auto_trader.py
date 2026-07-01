@@ -1692,14 +1692,26 @@ class AutoTrader:
                             continue
                     except (ValueError, TypeError):
                         pass  # Malformed date → allow trade (fail-open)
-                # Signal freshness check — skip stale signals unless price still confirms direction
-                # Use detection time (wall-clock when first seen) instead of bar time,
-                # so signals aren't penalised for bar-data lag.
-                _signal_max_age = int(effective_settings.get("signalMaxAgeSecs", 0))
+                # Signal freshness check. S10 is a fast 1m/2m setup, so use the
+                # signal bar timestamp and enforce a hard age limit. Other
+                # strategies keep the older first-seen fallback behavior.
+                _signal_max_age = int(strat_settings.get("signalMaxAgeSecs", effective_settings.get("signalMaxAgeSecs", 0)))
                 if _signal_max_age > 0:
-                    _first_seen = self._signal_first_seen.get(signal.id, signal.entry_time)
+                    _is_s10 = signal.strategy_id.startswith("strategy10")
+                    _first_seen = signal.entry_time if _is_s10 else self._signal_first_seen.get(signal.id, signal.entry_time)
                     _signal_age = int(time.time()) - _first_seen
                     if _signal_age > _signal_max_age:
+                        if _is_s10:
+                            self._log_signal_skip(
+                                "signal_too_old",
+                                f"Skipped: S10 signal is {_signal_age}s old (max {_signal_max_age}s).",
+                                signal=signal,
+                                symbol=symbol,
+                                signal_age=_signal_age,
+                                max_age=_signal_max_age,
+                            )
+                            self._seen_signals.add(signal.id)
+                            continue
                         # Check if price still moving in signal direction using 5m bars
                         _price_confirms = False
                         _bars_5m = cache.get("bars5m", [])
@@ -1737,6 +1749,32 @@ class AutoTrader:
                             # Mark as seen so it doesn't reappear on every scan
                             self._seen_signals.add(signal.id)
                             continue
+                if signal.strategy_id.startswith("strategy10") and strat_settings.get("requireEntryPriceConfirmation", True):
+                    _meta = getattr(signal, "metadata", None) or {}
+                    _signal_high = _safe_float(_meta.get("signalHigh"), 0)
+                    _signal_low = _safe_float(_meta.get("signalLow"), 0)
+                    if signal.direction == "CALL" and _signal_high > 0 and latest_price <= _signal_high:
+                        self._log_signal_skip(
+                            "entry_price_not_confirmed",
+                            "Skipped: live price is no longer above the S10 signal candle high.",
+                            signal=signal,
+                            symbol=symbol,
+                            latest_price=latest_price,
+                            signal_high=_signal_high,
+                        )
+                        self._seen_signals.add(signal.id)
+                        continue
+                    if signal.direction == "PUT" and _signal_low > 0 and latest_price >= _signal_low:
+                        self._log_signal_skip(
+                            "entry_price_not_confirmed",
+                            "Skipped: live price is no longer below the S10 signal candle low.",
+                            signal=signal,
+                            symbol=symbol,
+                            latest_price=latest_price,
+                            signal_low=_signal_low,
+                        )
+                        self._seen_signals.add(signal.id)
+                        continue
                 right = "C" if signal.direction == "CALL" else "P"
                 if right == "C" and not effective_settings.get("allowCalls", True):
                     self._log_signal_skip(
@@ -1794,7 +1832,7 @@ class AutoTrader:
                 max_spread_pct = _safe_float(effective_settings.get("maxSpreadPct"), 20.0)
                 max_spread_dollar = _safe_float(effective_settings.get("maxSpreadDollar"), 0.30)
                 prefer_tight_spreads = bool(effective_settings.get("preferTightSpreads", True))
-                min_delta = _safe_float(effective_settings.get("minDelta"), 0.05)
+                min_delta = _safe_float(strat_settings.get("minDelta", effective_settings.get("minDelta")), 0.05)
 
                 # Collect all valid strikes (with spread data)
                 valid_strikes = []

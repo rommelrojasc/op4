@@ -123,7 +123,7 @@ Frontend: http://localhost:3000
 - **Strategy 7:** 0DTE Scalper (1m bars, 10% target, 5min hold)
 - **Strategy 8:** 0DTE Momentum Rider (1m+5m bars, 50% target, trailing stop)
 - **Strategy 9:** 0DTE Gap Fade Enhanced (gap reversal, 20% target)
-- **Strategy 10:** 0DTE Trend Following (5m+15m bars, 75% target)
+- **Strategy 10:** 0DTE Trend Following (1m+2m bars, 75% target)
 
 **0DTE Safety Features:**
 - Auto-close all positions by 15:45 ET (15 min before expiration)

@@ -31,6 +31,7 @@ import { OverviewPage } from '@/components/overview/OverviewPage';
 import { TradingDashboard } from '@/components/overview/TradingDashboard';
 import { StrategiesView } from '@/components/overview/StrategiesView';
 import { BacktestingView } from '@/components/backtesting/BacktestingView';
+import { ZeroDteTool } from '@/components/zerodte/ZeroDteTool';
 import { useChartStore } from '@/store/chartStore';
 
 // Create React Query client
@@ -150,7 +151,7 @@ function IbGatewayDot() {
 
 function App() {
   const [view, setView] = useState<'overview' | 'dashboard'>('overview');
-  const [activeTab, setActiveTab] = useState<'trading' | 'research' | 'strategies' | 'backtesting'>('trading');
+  const [activeTab, setActiveTab] = useState<'trading' | 'research' | 'strategies' | 'backtesting' | 'zerodte'>('trading');
   const [preset, setPreset] = useState<ThemePreset>(loadPreset);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingPreset, setPendingPreset] = useState<ThemePreset>(preset);
@@ -217,6 +218,9 @@ function App() {
                 <Button onClick={() => setActiveTab('backtesting')} disableRipple sx={tabSx('backtesting')}>
                   Backtesting
                 </Button>
+                <Button onClick={() => setActiveTab('zerodte')} disableRipple sx={tabSx('zerodte')}>
+                  0DTE
+                </Button>
 
                 {/* Spacer */}
                 <Box sx={{ flex: 1 }} />
@@ -241,6 +245,11 @@ function App() {
                   </Box>
                 )}
                 {activeTab === 'backtesting' && <BacktestingView />}
+                {activeTab === 'zerodte' && (
+                  <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <ZeroDteTool />
+                  </Box>
+                )}
                 {activeTab === 'research' && (
                   <OverviewPage
                     onSelectSymbol={(symbol) => {

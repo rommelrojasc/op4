@@ -27,6 +27,7 @@ import { Box } from '@mui/material';
 import { CanvasRenderingTarget2D } from 'fancy-canvas';
 import { Bar, Interval } from '@/types/chart.types';
 import { analyzeBarAtTime, analyzeVisibleRange } from '@/analysis/strategyAnalysis';
+import { fetchTvAlerts, TvAlert } from '@/services/api/marketData';
 
 interface LightweightChartProps {
   showSessionLines?: boolean;
@@ -66,6 +67,7 @@ export function LightweightChart({ showSessionLines = true, focusRange }: Lightw
     direction: 'CALL' | 'PUT';
     id: string;
   } | null>(null);
+  const [tvAlerts, setTvAlerts] = useState<TvAlert[]>([]);
   const {
     bars,
     symbol,
@@ -1296,6 +1298,26 @@ export function LightweightChart({ showSessionLines = true, focusRange }: Lightw
     extHoursRef.current.setData(extData);
   }, [bars, interval, useRth]);
 
+  // Poll TradingView webhook alerts for the current symbol.
+  useEffect(() => {
+    if (!symbol) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const alerts = await fetchTvAlerts(symbol);
+        if (!cancelled) setTvAlerts(alerts);
+      } catch {
+        // ignore transient errors; keep last known alerts
+      }
+    };
+    load();
+    const id = setInterval(load, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [symbol]);
+
   useEffect(() => {
     if (!seriesRef.current) return;
     if (bars.length === 0) {
@@ -1306,6 +1328,20 @@ export function LightweightChart({ showSessionLines = true, focusRange }: Lightw
     const minTime = bars[0].time;
     const maxTime = bars[bars.length - 1].time;
     const inRange = (time: number) => time >= minTime && time <= maxTime;
+    // Snap an arbitrary unix time to the nearest bar (O(log n), bars sorted).
+    const snapToBar = (time: number) => {
+      let lo = 0;
+      let hi = bars.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >>> 1;
+        if (bars[mid].time <= time) lo = mid;
+        else hi = mid - 1;
+      }
+      if (lo + 1 < bars.length && Math.abs(bars[lo + 1].time - time) < Math.abs(bars[lo].time - time)) {
+        return bars[lo + 1].time;
+      }
+      return bars[lo].time;
+    };
     const markers: SeriesMarker<Time>[] = strategySignals.map((signal) => {
       const isSelected = signal.id === selectedSignalId;
       const isCall = signal.direction === 'CALL';
@@ -1361,6 +1397,32 @@ export function LightweightChart({ showSessionLines = true, focusRange }: Lightw
         text: 'TARGET',
       });
     }
+    // TradingView webhook alerts — snap each to the nearest visible bar.
+    tvAlerts.forEach((alert, idx) => {
+      const alertTime =
+        typeof alert.time === 'number'
+          ? alert.time
+          : typeof alert.time === 'string' && !Number.isNaN(Date.parse(alert.time))
+            ? Math.floor(Date.parse(alert.time) / 1000)
+            : alert.received_at;
+      // Drop only alerts older than the earliest visible bar. Alerts newer than
+      // the last bar (e.g. fired live while the chart data is stale/closed) snap
+      // forward to the most recent candle rather than being discarded.
+      if (alertTime < minTime - 86400) return;
+      const snapped = snapToBar(alertTime);
+      if (!inRange(snapped)) return;
+      const isBuy = (alert.action ?? '').toLowerCase() === 'buy';
+      const isSell = (alert.action ?? '').toLowerCase() === 'sell';
+      markers.push({
+        id: `tv-alert-${alert.received_at}-${idx}`,
+        time: snapped as unknown as Time,
+        position: (isBuy ? 'belowBar' : 'aboveBar') as SeriesMarkerPosition,
+        color: isBuy ? '#26a69a' : isSell ? '#ef5350' : '#42a5f5',
+        shape: (isBuy ? 'arrowUp' : 'arrowDown') as SeriesMarkerShape,
+        size: 3,
+        text: alert.signal ?? alert.raw ?? 'TV',
+      });
+    });
     markers.sort((a, b) => Number(a.time) - Number(b.time));
     seriesRef.current.setMarkers(markers);
     if (entryLineRef.current) {
@@ -1369,7 +1431,7 @@ export function LightweightChart({ showSessionLines = true, focusRange }: Lightw
     if (anchorLineRef.current) {
       anchorLineRef.current.setData([]);
     }
-  }, [bars, strategySignals, selectedSignalId, barAnalysis, nextSlotSignal]);
+  }, [bars, strategySignals, selectedSignalId, barAnalysis, nextSlotSignal, tvAlerts]);
 
   useEffect(() => {
     if (!seriesRef.current) return;

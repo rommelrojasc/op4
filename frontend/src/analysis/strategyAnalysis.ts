@@ -5,6 +5,7 @@ import { mergeStrategySettings, StrategySettings } from '@/analysis/strategyDefa
 
 const INTERVAL_SECONDS: Record<Interval, number> = {
   '1m': 60,
+  '2m': 120,
   '5m': 300,
   '15m': 900,
   '30m': 1800,

@@ -42,6 +42,72 @@ def calculate_ma(bars: List[Bar], period: int) -> List[Optional[float]]:
     return values
 
 
+def aggregate_intraday_bars(bars: List[Bar], minutes: int) -> List[Bar]:
+    """Aggregate sorted intraday bars into fixed-minute NY-time buckets."""
+    if minutes <= 1:
+        return list(bars)
+
+    aggregated: List[Bar] = []
+    current_bucket: Optional[int] = None
+    current_bar: Optional[Bar] = None
+
+    for bar in bars:
+        dt = datetime.fromtimestamp(bar["time"], NY_TZ)
+        bucket_minute = (dt.minute // minutes) * minutes
+        bucket_dt = dt.replace(minute=bucket_minute, second=0, microsecond=0)
+        bucket_ts = int(bucket_dt.timestamp())
+
+        if current_bucket != bucket_ts:
+            if current_bar is not None:
+                aggregated.append(current_bar)
+            current_bucket = bucket_ts
+            current_bar = {
+                **bar,
+                "time": bucket_ts,
+                "open": bar["open"],
+                "high": bar["high"],
+                "low": bar["low"],
+                "close": bar["close"],
+                "volume": bar.get("volume", 0),
+            }
+            continue
+
+        if current_bar is None:
+            continue
+        current_bar["high"] = max(current_bar["high"], bar["high"])
+        current_bar["low"] = min(current_bar["low"], bar["low"])
+        current_bar["close"] = bar["close"]
+        current_bar["volume"] = current_bar.get("volume", 0) + bar.get("volume", 0)
+
+    if current_bar is not None:
+        aggregated.append(current_bar)
+
+    return aggregated
+
+
+def calculate_session_vwap(bars: List[Bar]) -> List[Optional[float]]:
+    values: List[Optional[float]] = [None] * len(bars)
+    current_day = None
+    pv_total = 0.0
+    volume_total = 0.0
+
+    for i, bar in enumerate(bars):
+        day_key = get_ny_day_key(bar["time"])
+        if day_key != current_day:
+            current_day = day_key
+            pv_total = 0.0
+            volume_total = 0.0
+
+        volume = float(bar.get("volume", 0) or 0)
+        typical = (bar["high"] + bar["low"] + bar["close"]) / 3
+        pv_total += typical * volume
+        volume_total += volume
+        if volume_total > 0:
+            values[i] = pv_total / volume_total
+
+    return values
+
+
 def calculate_bollinger(
     bars: List[Bar], period: int = 20, mult: float = 2.0
 ) -> Dict[str, List[Optional[float]]]:
@@ -448,11 +514,19 @@ def analyze_with_bars(
             )
         )
 
-    # 0DTE strategies (require 5m bars, ticker filtering handled inside each strategy)
-    if bars5m:
-        # Get current price from most recent 1m bar
-        current_price = bars1m[-1]["close"] if bars1m else 0.0
+    # 0DTE strategies (ticker filtering handled inside each strategy)
+    current_price = bars1m[-1]["close"] if bars1m else 0.0
 
+    # Strategy 10 uses 1m bars and derives 2m alignment internally.
+    if bars1m and (run_all or 10 in enabled_strategies):
+        signals.extend(
+            detect_strategy10(
+                symbol, visible_range, bars1m, current_price, settings
+            )
+        )
+
+    # Other 0DTE strategies still require 5m bars.
+    if bars5m:
         if run_all or 7 in enabled_strategies:
             signals.extend(
                 detect_strategy7(
@@ -469,12 +543,6 @@ def analyze_with_bars(
             signals.extend(
                 detect_strategy9(
                     symbol, visible_range, bars1m, bars15m, bars1d, current_price, settings
-                )
-            )
-        if run_all or 10 in enabled_strategies:
-            signals.extend(
-                detect_strategy10(
-                    symbol, visible_range, bars5m, bars15m, current_price, settings
                 )
             )
         if run_all or 11 in enabled_strategies:
@@ -1522,20 +1590,20 @@ def detect_strategy9(
 def detect_strategy10(
     symbol: str,
     visible_range: Dict[str, int],
-    bars5m: List[Bar],
-    bars15m: List[Bar],
+    bars1m: List[Bar],
     current_price: float,
     settings: Dict[str, Any],
 ) -> List[StrategySignal]:
     """Strategy 10: 0DTE Trend Following
 
-    - Timeframe: 5-minute and 15-minute bars
+    - Timeframe: 1-minute and 2-minute bars
     - Target gain: 50-150% (default 75%)
     - Hold duration: 1-3 hours
     - Expected frequency: 1-5 trades/day
     - Signal criteria:
-      - Strong 5m trend (3+ bars same direction)
-      - 15m trend alignment
+      - Strong 1m trend (3+ bars same direction)
+      - 1m candles breaking out from SMA20 and SMA200
+      - 2m trend alignment
       - RSI(14) in trend zone (calls: 50-70, puts: 30-50)
       - Entry only 9:45-13:00 ET
     """
@@ -1550,7 +1618,7 @@ def detect_strategy10(
     if symbol.upper() not in [t.upper() for t in allowed_tickers]:
         return signals
 
-    if not bars5m or not bars15m:
+    if not bars1m:
         return signals
 
     # Parameters
@@ -1560,27 +1628,42 @@ def detect_strategy10(
     rsi_call_max = s10.get("rsiTrendCallMax", 70)
     rsi_put_min = s10.get("rsiTrendPutMin", 30)
     rsi_put_max = s10.get("rsiTrendPutMax", 50)
+    require_sma_breakout = s10.get("requireSmaBreakout", True)
+    sma_fast_period = max(2, int(s10.get("smaFastPeriod", 20)))
+    sma_slow_period = max(sma_fast_period + 1, int(s10.get("smaSlowPeriod", 200)))
+    require_vwap_trend = s10.get("requireVwapTrend", True)
+    vwap_slope_lookback = max(1, int(s10.get("vwapSlopeLookback", 5)))
+    failed_breakout_block_minutes = max(0, int(s10.get("failedBreakoutBlockMinutes", 30)))
     entry_start = s10.get("entryStartTime", "09:45")
     entry_end = s10.get("entryEndTime", "13:00")
 
+    bars2m = aggregate_intraday_bars(bars1m, 2)
+
     # Need enough bars for trend detection
-    if len(bars5m) < min_trend_bars + rsi_period or len(bars15m) < 2:
+    min_required_1m = min_trend_bars + rsi_period
+    if len(bars1m) < min_required_1m or len(bars2m) < 2:
+        return signals
+    if require_sma_breakout and len(bars1m) < max(sma_fast_period, sma_slow_period):
         return signals
 
-    # Calculate RSI on 5m bars
-    prices_5m = [b["close"] for b in bars5m]
-    rsi_values = calculate_rsi(prices_5m, rsi_period)
+    # Calculate RSI on 1m bars
+    prices_1m = [b["close"] for b in bars1m]
+    rsi_values = calculate_rsi(prices_1m, rsi_period)
+    sma_fast = calculate_ma(bars1m, sma_fast_period) if require_sma_breakout else []
+    sma_slow = calculate_ma(bars1m, sma_slow_period) if require_sma_breakout else []
+    vwap_values = calculate_session_vwap(bars1m) if require_vwap_trend else []
 
     if not rsi_values or len(rsi_values) < 2:
         return signals
 
-    rsi_offset = len(bars5m) - len(rsi_values)
+    rsi_offset = len(bars1m) - len(rsi_values)
     cooldown_minutes = s10.get("cooldownMinutes", 60)
     last_signal_time = 0
+    bars1m_times = [bar["time"] for bar in bars1m] if require_sma_breakout else []
 
-    for i in range(max(rsi_offset + 1, min_trend_bars), len(bars5m)):
-        bar_5m = bars5m[i]
-        current_time = bar_5m["time"]
+    for i in range(max(rsi_offset + 1, min_trend_bars), len(bars1m)):
+        bar_1m = bars1m[i]
+        current_time = bar_1m["time"]
 
         if not within_0dte_window(current_time, entry_start, entry_end):
             continue
@@ -1598,26 +1681,97 @@ def detect_strategy10(
         if current_rsi is None:
             continue
 
-        # Get recent 5m bars for trend detection
-        recent_5m = bars5m[i - min_trend_bars + 1:i + 1]
+        # Get recent 1m bars for trend detection
+        recent_1m = bars1m[i - min_trend_bars + 1:i + 1]
 
-        # Find the most recent 15m bar at or before this time
-        nearest_15m = None
-        for b15 in bars15m:
-            if b15["time"] <= current_time:
-                nearest_15m = b15
+        sma_breakout_call = True
+        sma_breakout_put = True
+        vwap_trend_call = True
+        vwap_trend_put = True
+        failed_breakout_call = False
+        failed_breakout_put = False
+        sma_idx = -1
+        if require_sma_breakout:
+            sma_idx = bisect.bisect_right(bars1m_times, current_time) - 1
+            first_sma_idx = sma_idx - min_trend_bars + 1
+            if sma_idx < 0 or first_sma_idx < 0:
+                continue
+
+            fast_now = sma_fast[sma_idx]
+            slow_now = sma_slow[sma_idx]
+            fast_start = sma_fast[first_sma_idx]
+            slow_start = sma_slow[first_sma_idx]
+            if fast_now is None or slow_now is None or fast_start is None or slow_start is None:
+                continue
+
+            first_close = bars1m[first_sma_idx]["close"]
+            last_close = bars1m[sma_idx]["close"]
+            highest_sma_now = max(fast_now, slow_now)
+            lowest_sma_now = min(fast_now, slow_now)
+            highest_sma_start = max(fast_start, slow_start)
+            lowest_sma_start = min(fast_start, slow_start)
+
+            # "Coming out of" the moving averages: price starts inside/below
+            # the SMA zone and closes above both for calls, or starts inside/above
+            # the SMA zone and closes below both for puts.
+            sma_breakout_call = first_close <= highest_sma_start and last_close > highest_sma_now
+            sma_breakout_put = first_close >= lowest_sma_start and last_close < lowest_sma_now
+
+            if failed_breakout_block_minutes > 0:
+                block_start_time = current_time - failed_breakout_block_minutes * 60
+                block_start_idx = bisect.bisect_left(bars1m_times, block_start_time)
+                call_broke = False
+                put_broke = False
+                for j in range(max(block_start_idx, sma_slow_period - 1), sma_idx):
+                    if sma_fast[j] is None or sma_slow[j] is None:
+                        continue
+                    upper_sma = max(sma_fast[j], sma_slow[j])
+                    lower_sma = min(sma_fast[j], sma_slow[j])
+                    close_j = bars1m[j]["close"]
+                    if close_j > upper_sma:
+                        call_broke = True
+                    elif call_broke and close_j <= upper_sma:
+                        failed_breakout_call = True
+                    if close_j < lower_sma:
+                        put_broke = True
+                    elif put_broke and close_j >= lower_sma:
+                        failed_breakout_put = True
+
+        if require_vwap_trend:
+            vwap_idx = i
+            vwap_start_idx = vwap_idx - vwap_slope_lookback
+            if vwap_start_idx < 0 or vwap_values[vwap_idx] is None or vwap_values[vwap_start_idx] is None:
+                continue
+            vwap_now = vwap_values[vwap_idx]
+            vwap_start = vwap_values[vwap_start_idx]
+            close_now = bar_1m["close"]
+            vwap_trend_call = close_now > vwap_now and vwap_now > vwap_start
+            vwap_trend_put = close_now < vwap_now and vwap_now < vwap_start
+
+        # Find the most recent 2m bar at or before this time
+        nearest_2m = None
+        for b2 in bars2m:
+            if b2["time"] <= current_time:
+                nearest_2m = b2
             else:
                 break
 
-        if not nearest_15m:
+        if not nearest_2m:
             continue
 
         # Bullish trend detection
-        bullish_5m_trend = all(b["close"] > b["open"] for b in recent_5m)
-        bullish_15m = nearest_15m["close"] > nearest_15m["open"]
+        bullish_1m_trend = all(b["close"] > b["open"] for b in recent_1m)
+        bullish_2m = nearest_2m["close"] > nearest_2m["open"]
         rsi_in_call_zone = rsi_call_min <= current_rsi <= rsi_call_max
 
-        if bullish_5m_trend and bullish_15m and rsi_in_call_zone:
+        if (
+            bullish_1m_trend
+            and bullish_2m
+            and rsi_in_call_zone
+            and sma_breakout_call
+            and vwap_trend_call
+            and not failed_breakout_call
+        ):
             signals.append(
                 StrategySignal(
                     symbol=symbol,
@@ -1625,18 +1779,38 @@ def detect_strategy10(
                     strategy_id="strategy10_0dte_trend",
                     direction="CALL",
                     entry_time=current_time,
-                    anchor_time=nearest_15m["time"],
+                    anchor_time=nearest_2m["time"],
+                    metadata={
+                        "smaFastPeriod": sma_fast_period,
+                        "smaSlowPeriod": sma_slow_period,
+                        "smaTimeframe": "1m",
+                        "trendTimeframe": "1m",
+                        "alignmentTimeframe": "2m",
+                        "signalHigh": bar_1m["high"],
+                        "signalLow": bar_1m["low"],
+                        "signalClose": bar_1m["close"],
+                        "vwap": round(vwap_values[i], 4) if require_vwap_trend and vwap_values[i] is not None else None,
+                        "smaFast": round(sma_fast[sma_idx], 4) if require_sma_breakout and sma_idx >= 0 and sma_fast[sma_idx] is not None else None,
+                        "smaSlow": round(sma_slow[sma_idx], 4) if require_sma_breakout and sma_idx >= 0 and sma_slow[sma_idx] is not None else None,
+                    },
                 )
             )
             last_signal_time = current_time
             continue
 
         # Bearish trend detection
-        bearish_5m_trend = all(b["close"] < b["open"] for b in recent_5m)
-        bearish_15m = nearest_15m["close"] < nearest_15m["open"]
+        bearish_1m_trend = all(b["close"] < b["open"] for b in recent_1m)
+        bearish_2m = nearest_2m["close"] < nearest_2m["open"]
         rsi_in_put_zone = rsi_put_min <= current_rsi <= rsi_put_max
 
-        if bearish_5m_trend and bearish_15m and rsi_in_put_zone:
+        if (
+            bearish_1m_trend
+            and bearish_2m
+            and rsi_in_put_zone
+            and sma_breakout_put
+            and vwap_trend_put
+            and not failed_breakout_put
+        ):
             signals.append(
                 StrategySignal(
                     symbol=symbol,
@@ -1644,7 +1818,20 @@ def detect_strategy10(
                     strategy_id="strategy10_0dte_trend",
                     direction="PUT",
                     entry_time=current_time,
-                    anchor_time=nearest_15m["time"],
+                    anchor_time=nearest_2m["time"],
+                    metadata={
+                        "smaFastPeriod": sma_fast_period,
+                        "smaSlowPeriod": sma_slow_period,
+                        "smaTimeframe": "1m",
+                        "trendTimeframe": "1m",
+                        "alignmentTimeframe": "2m",
+                        "signalHigh": bar_1m["high"],
+                        "signalLow": bar_1m["low"],
+                        "signalClose": bar_1m["close"],
+                        "vwap": round(vwap_values[i], 4) if require_vwap_trend and vwap_values[i] is not None else None,
+                        "smaFast": round(sma_fast[sma_idx], 4) if require_sma_breakout and sma_idx >= 0 and sma_fast[sma_idx] is not None else None,
+                        "smaSlow": round(sma_slow[sma_idx], 4) if require_sma_breakout and sma_idx >= 0 and sma_slow[sma_idx] is not None else None,
+                    },
                 )
             )
             last_signal_time = current_time

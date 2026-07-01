@@ -54,6 +54,14 @@ export interface MiniChartTrade {
   type: 'OPEN' | 'CLOSE';
 }
 
+export interface MiniChartAlert {
+  received_at: number;
+  time?: string | number;
+  action?: string;      // 'buy' | 'sell'
+  signal?: string;      // human-readable label
+  raw?: string;
+}
+
 interface MiniChartProps {
   symbol: string;
   entryPrice?: number;
@@ -63,13 +71,39 @@ interface MiniChartProps {
   useRth?: boolean;
   signals?: MiniChartSignal[];
   trades?: MiniChartTrade[];
+  alerts?: MiniChartAlert[];
   /** Show S14 GEX horizontal lines (Call Wall / Put Wall / Gamma Flip).
    *  Only takes effect for SPY and SPX symbols (others ignore). Default: false. */
   showGex?: boolean;
 }
 
-function buildMarkers(sigs: MiniChartSignal[], trds: MiniChartTrade[], minT: number, maxT: number): SeriesMarker<Time>[] {
+function buildMarkers(sigs: MiniChartSignal[], trds: MiniChartTrade[], minT: number, maxT: number, alerts: MiniChartAlert[] = []): SeriesMarker<Time>[] {
   const markers: SeriesMarker<Time>[] = [];
+
+  // TradingView webhook alerts. Use the alert's own time if present, else the
+  // received time. Alerts newer than the last bar (e.g. fired live while the
+  // chart data is stale/after-hours) snap forward to the last candle.
+  alerts.forEach((alert) => {
+    const t =
+      typeof alert.time === 'number'
+        ? alert.time
+        : typeof alert.time === 'string' && !Number.isNaN(Date.parse(alert.time))
+          ? Math.floor(Date.parse(alert.time) / 1000)
+          : alert.received_at;
+    if (t < minT - 86400) return; // older than the visible window
+    const snapped = t > maxT ? maxT : t;
+    if (snapped < minT || snapped > maxT) return;
+    const isBuy = (alert.action ?? '').toLowerCase() === 'buy';
+    const isSell = (alert.action ?? '').toLowerCase() === 'sell';
+    markers.push({
+      time: snapped as unknown as Time,
+      position: (isBuy ? 'belowBar' : 'aboveBar') as SeriesMarkerPosition,
+      color: isBuy ? '#26a69a' : isSell ? '#ef5350' : '#42a5f5',
+      shape: (isBuy ? 'arrowUp' : 'arrowDown') as SeriesMarkerShape,
+      size: 3,
+      text: alert.signal ?? alert.raw ?? 'TV',
+    });
+  });
 
   sigs
     .filter((sig) => sig.time >= minT && sig.time <= maxT)
@@ -130,7 +164,7 @@ function buildMarkers(sigs: MiniChartSignal[], trds: MiniChartTrade[], minT: num
   return markers;
 }
 
-export function MiniChart({ symbol, entryPrice, height = 250, interval = '1m', refreshSeconds = 15, useRth = false, signals = [], trades = [], showGex = false }: MiniChartProps) {
+export function MiniChart({ symbol, entryPrice, height = 250, interval = '1m', refreshSeconds = 15, useRth = false, signals = [], trades = [], alerts = [], showGex = false }: MiniChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -147,6 +181,8 @@ export function MiniChart({ symbol, entryPrice, height = 250, interval = '1m', r
   signalsRef.current = signals;
   const tradesRef = useRef(trades);
   tradesRef.current = trades;
+  const alertsRef = useRef(alerts);
+  alertsRef.current = alerts;
 
   // Create chart + initial load + polling — all in one effect
   useEffect(() => {
@@ -249,7 +285,7 @@ export function MiniChart({ symbol, entryPrice, height = 250, interval = '1m', r
         // Render signal + trade markers
         const minT = candles.length > 0 ? Number(candles[0].time) : 0;
         const maxT = candles.length > 0 ? Number(candles[candles.length - 1].time) : 0;
-        const markers = buildMarkers(signalsRef.current, tradesRef.current, minT, maxT);
+        const markers = buildMarkers(signalsRef.current, tradesRef.current, minT, maxT, alertsRef.current);
         candleSeries.setMarkers(markers);
         if (fitContent) chart.timeScale().fitContent();
         setLoading(false);
@@ -299,9 +335,9 @@ export function MiniChart({ symbol, entryPrice, height = 250, interval = '1m', r
       if (!bars.length) return;
       const minT = bars[0].time;
       const maxT = bars[bars.length - 1].time;
-      candle.setMarkers(buildMarkers(signalsRef.current, tradesRef.current, minT, maxT));
+      candle.setMarkers(buildMarkers(signalsRef.current, tradesRef.current, minT, maxT, alertsRef.current));
     }).catch(() => {});
-  }, [signals, trades, symbol, interval, useRth]);
+  }, [signals, trades, alerts, symbol, interval, useRth]);
 
   // GEX overlay: fetch SPX 0DTE GEX and draw Call Wall / Put Wall / Gamma Flip
   // as horizontal price lines. Refreshes every 5 minutes.

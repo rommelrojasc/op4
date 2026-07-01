@@ -183,6 +183,51 @@ export async function fetchGexAnalysis(
   return response.data;
 }
 
+export interface HistoricalGexResult {
+  spot: number;
+  call_wall?: { strike: number; gex: number; distance: number } | null;
+  put_wall?: { strike: number; gex: number; distance: number } | null;
+  gamma_flip?: { strike: number; distance: number } | null;
+  regime?: string;
+  long_gamma_nodes?: Array<{ strike: number; gex: number }>;
+  short_gamma_nodes?: Array<{ strike: number; gex: number }>;
+  profile?: Array<{ strike: number; net_gex: number; call_gex: number; put_gex: number }>;
+  as_of?: string;
+  source?: string;
+  symbol?: string;
+  quote_count?: number;
+  error?: string;
+}
+
+export interface SpyBar {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export async function fetchHistoricalGex(
+  date: string,
+  time: string = '10:00',
+  strikeRange: number = 25,
+): Promise<HistoricalGexResult> {
+  const response = await apiClient.get('/market-data/historical-gex', {
+    params: { date, time, strike_range: strikeRange },
+    timeout: 180000, // up to 3 min — one Polygon API call per strike
+  });
+  return response.data;
+}
+
+export async function fetchHistoricalSpyBars(date: string): Promise<{ date: string; symbol: string; bars: SpyBar[] }> {
+  const response = await apiClient.get('/market-data/historical-spy-bars', {
+    params: { date },
+    timeout: 60000,
+  });
+  return response.data;
+}
+
 export async function fetchEarnings(symbol: string): Promise<{
   symbol: string;
   earnings_date: string | null;
@@ -522,6 +567,28 @@ export async function flushTrackedPosition(positionId: string, closePrice?: numb
   const params = closePrice != null ? `?close_price=${closePrice}` : '';
   const response = await apiClient.post(`/market-data/trading/worker/flush-position/${encodeURIComponent(positionId)}${params}`);
   return response.data;
+}
+
+export interface TvAlert {
+  received_at: number;
+  content_type?: string | null;
+  raw: string;
+  parsed_json?: Record<string, any> | null;
+  symbol?: string;
+  price?: number;
+  time?: string | number;
+  action?: string;
+  signal?: string;
+}
+
+/**
+ * Fetch TradingView webhook alerts, optionally filtered by symbol.
+ */
+export async function fetchTvAlerts(symbol?: string, limit = 200): Promise<TvAlert[]> {
+  const params: Record<string, any> = { limit };
+  if (symbol) params.symbol = symbol;
+  const response = await apiClient.get('/alerts', { params });
+  return response.data?.alerts ?? [];
 }
 
 export interface TradingModeResponse {

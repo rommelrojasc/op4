@@ -278,3 +278,91 @@ def get_option_premium_at_time(
 
     nearest = min(bars, key=lambda b: abs(b["time"] - target_ts))
     return nearest
+
+
+def get_options_snapshot_historical(
+    symbol: str,
+    expiration: str,
+    spot: Optional[float] = None,
+    window: float = 20.0,
+) -> List[Dict[str, Any]]:
+    """Fetch historical option snapshots with greeks for a given expiration date.
+
+    Uses Polygon's snapshot options chain endpoint with the 'date' parameter
+    (requires Options add-on). Returns dicts compatible with
+    compute_gex_levels_from_quotes().
+
+    Args:
+        symbol: Underlying ticker (e.g., "SPY")
+        expiration: Expiration date "YYYY-MM-DD" — also used as the as-of date
+        spot: Current spot price; when provided, limits strikes to spot ± window
+        window: Half-width of strike range in dollars (default 20)
+
+    Returns:
+        List of quote dicts with keys: strike, right, expiration,
+        gamma, delta, theta, iv, oi, volume, close
+    """
+    client = _get_client()
+
+    # Polygon snapshot endpoint uses "as_of" for historical date (not "date")
+    params: Dict[str, Any] = {
+        "expiration_date": expiration,
+        "as_of": expiration,
+        "limit": 250,
+    }
+    if spot is not None:
+        params["strike_price_gte"] = spot - window
+        params["strike_price_lte"] = spot + window
+
+    logger.info(
+        "Polygon snapshot request: symbol=%s params=%s", symbol, params
+    )
+
+    raw_snaps = _call_with_retry(
+        lambda: list(client.list_snapshot_options_chain(underlying_asset=symbol, params=params))
+    )
+    logger.info("Polygon snapshot returned %d raw items for %s %s", len(raw_snaps), symbol, expiration)
+
+    # If the strike filter returned nothing, retry without it (diagnostic fallback)
+    if not raw_snaps and spot is not None:
+        logger.warning(
+            "Strike-range filter returned 0 results — retrying without strike filter for %s %s",
+            symbol, expiration,
+        )
+        fallback_params: Dict[str, Any] = {
+            "expiration_date": expiration,
+            "as_of": expiration,
+            "limit": 250,
+        }
+        raw_snaps = _call_with_retry(
+            lambda: list(client.list_snapshot_options_chain(underlying_asset=symbol, params=fallback_params))
+        )
+        logger.info("Fallback (no strike filter) returned %d raw items", len(raw_snaps))
+
+    results: List[Dict[str, Any]] = []
+    skipped_no_greeks = 0
+    for snap in raw_snaps:
+        greeks = getattr(snap, "greeks", None)
+        details = getattr(snap, "details", None)
+        if not greeks or not details:
+            skipped_no_greeks += 1
+            continue
+        day = getattr(snap, "day", None)
+        results.append({
+            "strike": details.strike_price,
+            "right": "C" if details.contract_type == "call" else "P",
+            "expiration": details.expiration_date,
+            "gamma": getattr(greeks, "gamma", 0) or 0,
+            "delta": getattr(greeks, "delta", 0) or 0,
+            "theta": getattr(greeks, "theta", 0) or 0,
+            "iv": getattr(snap, "implied_volatility", None),
+            "oi": getattr(snap, "open_interest", 0) or 0,
+            "volume": getattr(day, "volume", 0) or 0 if day else 0,
+            "close": getattr(day, "close", None) if day else None,
+        })
+
+    logger.info(
+        "Polygon snapshot parsed: %d valid quotes, %d skipped (no greeks/details)",
+        len(results), skipped_no_greeks,
+    )
+    return results

@@ -100,6 +100,15 @@ export type StrategySettings = {
     rsiTrendPutMin: number;
     rsiTrendPutMax: number;
     rsiPeriod: number;
+    requireSmaBreakout: boolean;
+    smaFastPeriod: number;
+    smaSlowPeriod: number;
+    signalMaxAgeSecs: number;
+    requireEntryPriceConfirmation: boolean;
+    requireVwapTrend: boolean;
+    vwapSlopeLookback: number;
+    failedBreakoutBlockMinutes: number;
+    minDelta: number;
   };
   strategy11: {
     swingLookback: number;
@@ -218,6 +227,15 @@ export const DEFAULT_STRATEGY_SETTINGS: StrategySettings = {
     rsiTrendPutMin: 30,
     rsiTrendPutMax: 50,
     rsiPeriod: 14,
+    requireSmaBreakout: false,
+    smaFastPeriod: 20,
+    smaSlowPeriod: 200,
+    signalMaxAgeSecs: 180,
+    requireEntryPriceConfirmation: true,
+    requireVwapTrend: true,
+    vwapSlopeLookback: 5,
+    failedBreakoutBlockMinutes: 30,
+    minDelta: 0.35,
   },
   strategy11: {
     swingLookback: 3,

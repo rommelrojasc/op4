@@ -64,10 +64,11 @@ import {
   fetchPositionTpOverrides,
   setPositionTpOverride,
   deletePositionTpOverride,
+  fetchTvAlerts,
 } from '@/services/api/marketData';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { MobileTradingView } from './MobileTradingView';
-import { MiniChart, MiniChartSignal, MiniChartTrade } from './MiniChart';
+import { MiniChart, MiniChartSignal, MiniChartTrade, MiniChartAlert } from './MiniChart';
 import PriceRangeBar from './PriceRangeBar';
 
 const SCAN_CATEGORIES = [
@@ -259,12 +260,21 @@ const STRATEGY_METADATA: Record<string, { name: string; params: Array<{ key: str
       { key: 'timeExitAt', label: 'Time Exit', type: 'time', description: 'Force-close open positions at this time (ET)', default: '15:30' },
       { key: 'limitOrderTimeoutSecs', label: 'Limit Timeout (s)', type: 'number', description: 'Seconds to wait for limit fill before market fallback', default: 15 },
       { key: 'cooldownMinutes', label: 'Cooldown (min)', type: 'number', description: 'Minutes between signals', default: 60 },
-      { key: 'minTrendBars', label: 'Min Trend Bars', type: 'number', description: 'Minimum bars for trend confirmation', default: 3 },
+      { key: 'minTrendBars', label: 'Min Trend Bars', type: 'number', description: 'Minimum consecutive 1m bars for trend confirmation', default: 3 },
       { key: 'rsiTrendCallMin', label: 'RSI Call Min', type: 'number', description: 'Minimum RSI for call signals (0-100)', default: 50 },
       { key: 'rsiTrendCallMax', label: 'RSI Call Max', type: 'number', description: 'Maximum RSI for call signals (0-100)', default: 70 },
       { key: 'rsiTrendPutMin', label: 'RSI Put Min', type: 'number', description: 'Minimum RSI for put signals (0-100)', default: 30 },
       { key: 'rsiTrendPutMax', label: 'RSI Put Max', type: 'number', description: 'Maximum RSI for put signals (0-100)', default: 50 },
       { key: 'rsiPeriod', label: 'RSI Period', type: 'number', description: 'RSI calculation period', default: 14 },
+      { key: 'requireSmaBreakout', label: 'Require SMA Breakout', type: 'boolean', description: 'Require 1m price to break away from SMA20 and SMA200 before entry', default: false },
+      { key: 'smaFastPeriod', label: 'Fast SMA Period', type: 'number', description: 'Fast SMA period on 1m bars', default: 20 },
+      { key: 'smaSlowPeriod', label: 'Slow SMA Period', type: 'number', description: 'Slow SMA period on 1m bars', default: 200 },
+      { key: 'signalMaxAgeSecs', label: 'Max Signal Age (s)', type: 'number', description: 'Reject stale S10 signals older than this many seconds', default: 180 },
+      { key: 'requireEntryPriceConfirmation', label: 'Require Price Confirmation', type: 'boolean', description: 'Require live price to remain beyond the signal candle before entry', default: true },
+      { key: 'requireVwapTrend', label: 'Require VWAP Trend', type: 'boolean', description: 'Require price on the right side of VWAP with VWAP sloping in trade direction', default: true },
+      { key: 'vwapSlopeLookback', label: 'VWAP Slope Lookback', type: 'number', description: '1m bars used to confirm VWAP slope', default: 5 },
+      { key: 'failedBreakoutBlockMinutes', label: 'Failed Breakout Block', type: 'number', description: 'Minutes to block entries after SMA breakout fails', default: 30 },
+      { key: 'minDelta', label: 'Minimum Delta', type: 'number', description: 'Minimum absolute option delta for S10 contract selection', default: 0.35, min: 0, max: 1, step: 0.05 },
       { key: 'profitTargetPct', label: 'Profit Target %', type: 'percent', description: 'TP target', default: 0.75, min: 0, max: 2, step: 0.05 },
       { key: 'stopLossPct', label: 'Stop Loss %', type: 'percent', description: 'Stop loss', default: 0.30, min: 0, max: 1, step: 0.05 },
       { key: 'useTrailingStop', label: 'Use Trailing Stop', type: 'boolean', description: 'Enable trailing stop for this strategy', default: true },
@@ -639,6 +649,18 @@ export function TradingDashboard() {
     refetchInterval: 60000,
     staleTime: 30000,
   });
+
+  const tvAlertsQuery = useQuery({
+    queryKey: ['tv-alerts', dashboardChartSymbol],
+    queryFn: () => fetchTvAlerts(dashboardChartSymbol),
+    refetchInterval: 15000,
+    staleTime: 10000,
+  });
+
+  const chartAlerts = useMemo<MiniChartAlert[]>(
+    () => (tvAlertsQuery.data ?? []) as MiniChartAlert[],
+    [tvAlertsQuery.data]
+  );
 
   const chartSignals = useMemo<MiniChartSignal[]>(() => {
     const signals = backtestSignalsQuery.data?.signals;
@@ -1362,7 +1384,7 @@ export function TradingDashboard() {
               <MenuItem key={s} value={s} sx={{ fontSize: 12 }}>{s}</MenuItem>
             ))}
           </TextField>
-          {['1m', '5m', '15m', '1h', '1d'].map((tf) => (
+          {['1m', '2m', '5m', '15m', '1h', '1d'].map((tf) => (
             <Box
               key={tf}
               onClick={() => setDashboardChartInterval(tf)}
@@ -1415,7 +1437,7 @@ export function TradingDashboard() {
             </Box>
           )}
         </Box>
-        <MiniChart symbol={dashboardChartSymbol} height={440} interval={dashboardChartInterval} useRth={dashboardChartRth} signals={chartSignals} trades={chartTrades} showGex={dashboardChartGex} />
+        <MiniChart symbol={dashboardChartSymbol} height={440} interval={dashboardChartInterval} useRth={dashboardChartRth} signals={chartSignals} trades={chartTrades} alerts={chartAlerts} showGex={dashboardChartGex} />
       </Box>
 
       {/* Three-column layout */}

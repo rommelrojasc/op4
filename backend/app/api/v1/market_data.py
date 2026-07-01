@@ -585,6 +585,48 @@ async def gex_analysis(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/historical-gex")
+async def historical_gex(
+    date: str = Query(..., description="Trading date YYYY-MM-DD"),
+    time: str = Query(default="10:00", description="ET time HH:MM (e.g. '10:30')"),
+    strike_range: int = Query(default=25, description="Strike window ± around spot"),
+):
+    """Return historical GEX levels for SPY at a specific date and time.
+
+    Uses Polygon option bars + Black-Scholes gamma approximation (same path as
+    the existing backtester). Expect 30–90 s response time — one Polygon API
+    call per strike in the range.
+    """
+    import asyncio
+    from app.services.gex.historical_gex import compute_historical_gex_spy
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: compute_historical_gex_spy(date=date, time_et=time, strike_range=strike_range),
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Historical GEX error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/historical-spy-bars")
+async def historical_spy_bars(
+    date: str = Query(..., description="Trading date YYYY-MM-DD"),
+):
+    """Return 1-minute OHLCV bars for SPY on a given date (full session)."""
+    import asyncio
+    from app.services.gex.historical_gex import get_spy_intraday_bars
+    try:
+        loop = asyncio.get_event_loop()
+        bars = await loop.run_in_executor(None, lambda: get_spy_intraday_bars(date=date))
+        return {"date": date, "symbol": "SPY", "bars": bars}
+    except Exception as e:
+        logger.error(f"Historical SPY bars error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/gex-dashboard")
 async def gex_dashboard():
     """GEX Dashboard UI."""

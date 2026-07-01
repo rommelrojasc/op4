@@ -9,6 +9,7 @@ from app.services.ib.gateway import ib_manager
 from app.services.ib.trading import start_account_summary_listener, stop_account_summary_listener
 from app.services.auto_trader import auto_trader
 from app.api.v1 import market_data
+from app.api.v1 import alerts
 from app.models.schemas import HealthResponse
 
 # Configure logging
@@ -62,6 +63,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(market_data.router, prefix=settings.API_V1_PREFIX)
+app.include_router(alerts.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health", response_model=HealthResponse)

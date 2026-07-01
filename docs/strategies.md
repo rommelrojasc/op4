@@ -462,38 +462,60 @@ Entry window: 10:00 AM - 2:00 PM ET
 ### Strategy 10 — Trend Following
 
 **ID:** `strategy10_0dte_trend`
-**Concept:** Catches sustained intraday trends using consecutive 5M bars, RSI confirmation in a trend-following zone, and 15M alignment. The widest profit target of all 0DTE strategies.
+**Concept:** Catches sustained intraday trends using consecutive 1M bars, a 1M SMA20/SMA200 breakout, RSI confirmation in a trend-following zone, and 2M alignment. The widest profit target of all 0DTE strategies.
 
 #### How It Works
 
 ```
-Timeframes: 5M (trend) + 15M (alignment)
+Timeframes: 1M (trend, RSI, SMA breakout) + 2M (alignment)
 Entry window: 9:45 AM - 1:00 PM ET
 ```
 
-1. **Trend detection (5M bars):**
+1. **Trend detection (1M bars):**
    - 3+ consecutive bars closing in the same direction (all close > open or all close < open)
 
-2. **RSI confirmation (5M, period 14):**
+2. **Optional SMA breakout filter (1M bars):**
+   - **CALL:** price starts at/below the SMA20/SMA200 zone and closes above both averages
+   - **PUT:** price starts at/above the SMA20/SMA200 zone and closes below both averages
+
+3. **RSI confirmation (1M, period 14):**
    - **CALL:** RSI between 50-70 (trending up but not overextended)
    - **PUT:** RSI between 30-50 (trending down but not overextended)
 
-3. **15M alignment:**
-   - Most recent 15M bar must close in the same direction as the 5M trend
+4. **2M alignment:**
+   - Most recent 2M bar must close in the same direction as the 1M trend
 
-4. **Time-based exit:** Force-close at 3:30 PM ET
+5. **VWAP trend filter:**
+   - **CALL:** price must be above VWAP and VWAP must be rising
+   - **PUT:** price must be below VWAP and VWAP must be falling
+
+6. **Freshness and continuation checks:**
+   - Signal must be recent enough to trade
+   - Live price must still be beyond the signal candle in the trade direction
+   - Recent failed SMA breakouts temporarily block new entries
+
+7. **Time-based exit:** Force-close at 3:30 PM ET
 
 #### Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `allowedTickers` | ["SPX"] | Only these tickers can trade |
-| `minTrendBars` | 3 | Consecutive 5M bars same direction |
+| `minTrendBars` | 3 | Consecutive 1M bars same direction |
 | `rsiPeriod` | 14 | RSI calculation period |
 | `rsiTrendCallMin` | 50 | Lower RSI bound for CALL |
 | `rsiTrendCallMax` | 70 | Upper RSI bound for CALL |
 | `rsiTrendPutMin` | 30 | Lower RSI bound for PUT |
 | `rsiTrendPutMax` | 50 | Upper RSI bound for PUT |
+| `requireSmaBreakout` | false | Optionally require 1M price to break out from the SMA20/SMA200 zone |
+| `smaFastPeriod` | 20 | Fast SMA period on 1M bars |
+| `smaSlowPeriod` | 200 | Slow SMA period on 1M bars |
+| `signalMaxAgeSecs` | 180 | Maximum signal age before the auto-trader rejects it |
+| `requireEntryPriceConfirmation` | true | Require live price to remain beyond the signal candle before entry |
+| `requireVwapTrend` | true | Require VWAP side and VWAP slope to confirm direction |
+| `vwapSlopeLookback` | 5 | Number of 1M bars used to confirm VWAP slope |
+| `failedBreakoutBlockMinutes` | 30 | Minutes to block entries after an SMA breakout fails |
+| `minDelta` | 0.35 | Minimum absolute option delta for contract selection |
 | `entryStartTime` | 09:45 | Start scanning |
 | `entryEndTime` | 13:00 | Stop scanning at 1:00 PM |
 | `timeExitAt` | 15:30 | Force-close at 3:30 PM |
@@ -629,7 +651,7 @@ Note: Strategy-level TP settings (defined in `strategy_defaults.py` for strategi
 | **7** | 0DTE Scalper | SPX | 09:30-15:45 | 1M | Momentum + volume spike | Volume SMA |
 | **8** | 0DTE Momentum | SPX | 09:30-15:45 | 1M, 5M | RSI zone + alignment | RSI(14) |
 | **9** | 0DTE Gap Fade | SPX | 10:00-14:00 | 1D, 15M, 1M | Large gap + fill confirmation | Gap % |
-| **10** | 0DTE Trend | SPX | 09:45-13:00 | 5M, 15M | Consecutive bars + RSI zone | RSI(14) |
+| **10** | 0DTE Trend | SPX | 09:45-13:00 | 1M, 2M | Consecutive bars + RSI zone + SMA breakout | RSI(14), SMA20/200 |
 
 | Strategy | TP | Stop Loss | Trail | Trail Activation | Max Hold |
 |----------|-----|----------|-------|-----------------|----------|
